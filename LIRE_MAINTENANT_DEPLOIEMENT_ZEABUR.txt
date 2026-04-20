@@ -1,16 +1,30 @@
 ═══════════════════════════════════════════════════════════════════
-🎯 COMMENCER ICI MAINTENANT
+🎯 LIRE MAINTENANT - DÉPLOIEMENT ZEABUR
 ═══════════════════════════════════════════════════════════════════
 
-Bonjour ! Voici ce que vous devez faire MAINTENANT.
+Bonjour ! Voici la situation actuelle et ce que vous devez faire.
 
 ═══════════════════════════════════════════════════════════════════
-⚡ ACTION IMMÉDIATE (5 MINUTES)
+📊 SITUATION ACTUELLE
+═══════════════════════════════════════════════════════════════════
+
+✅ FRONTEND: Problème nginx.conf RÉSOLU
+   → Fichier nginx.conf supprimé de la racine
+   → Configuration correcte dans Dockerfile.frontend
+   → Prêt à déployer
+
+❌ BACKEND: Build le FRONTEND au lieu du BACKEND
+   → Logs montrent: npm ci, dist/assets/*.js
+   → Au lieu de: pip install, uvicorn running
+   → Cause: Service Name = "frontend" au lieu de "backend"
+
+═══════════════════════════════════════════════════════════════════
+✅ SOLUTION (5 MINUTES)
 ═══════════════════════════════════════════════════════════════════
 
 1. Aller sur: https://zeabur.com/dashboard
 
-2. Cliquer sur le service "Backend"
+2. Cliquer sur le service "Backend" (pybackend.zeabur.app)
 
 3. Settings → Service Name: "frontend" → "backend"
 
@@ -21,24 +35,36 @@ Bonjour ! Voici ce que vous devez faire MAINTENANT.
 6. Tester: https://pybackend.zeabur.app/health
 
 ═══════════════════════════════════════════════════════════════════
-📚 POUR PLUS DE DÉTAILS
+📚 DOCUMENTATION DISPONIBLE
 ═══════════════════════════════════════════════════════════════════
 
-Ouvrir dans cet ordre:
+POUR COMMENCER (5 minutes):
+→ 00_CORRECTION_ZEABUR_MAINTENANT_20_AVRIL_2026.txt
+   Guide complet avec checklist
 
-1. LIRE_MAINTENANT_DEPLOIEMENT_ZEABUR.txt (1 min)
-   → Vue d'ensemble rapide
+POUR VISUALISER (3 minutes):
+→ GUIDE_VISUEL_COMPARAISON_ZEABUR_20_AVRIL_2026.txt
+   Comparaisons avant/après avec logs
 
-2. 00_CORRECTION_ZEABUR_MAINTENANT_20_AVRIL_2026.txt (10 min)
-   → Guide complet avec checklist
+POUR COMPRENDRE (10 minutes):
+→ REPONSES_QUESTIONS_DEPLOIEMENT_ZEABUR.md
+   Réponses à vos 4 questions
 
-3. GUIDE_VISUEL_COMPARAISON_ZEABUR_20_AVRIL_2026.txt (5 min)
-   → Comparaisons avant/après
+POUR NAVIGUER:
+→ 00_INDEX_DEPLOIEMENT_ZEABUR_MISE_A_JOUR_20_AVRIL_2026.md
+   Index complet de toute la documentation
 
 ═══════════════════════════════════════════════════════════════════
-🎯 C'EST TOUT !
+🎯 PROCHAINE ÉTAPE
 ═══════════════════════════════════════════════════════════════════
 
-Allez sur Zeabur et changez le Service Name ! 🚀
+Ouvrir maintenant:
+→ 00_CORRECTION_ZEABUR_MAINTENANT_20_AVRIL_2026.txt
+
+Puis aller sur Zeabur et faire la correction ! 🚀
+
+═══════════════════════════════════════════════════════════════════
+
+Bonne chance ! 🎉
 
 ═══════════════════════════════════════════════════════════════════

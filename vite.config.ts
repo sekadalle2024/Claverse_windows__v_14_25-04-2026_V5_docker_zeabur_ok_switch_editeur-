@@ -91,7 +91,7 @@ export default defineConfig({
     exclude: ['lucide-react'],
     entries: ['index.html'], // Scanner uniquement index.html, pas les fichiers de test
   },
-  base: process.env.ELECTRON_START_URL ? '/' : './',
+  base: '/', // Force absolute paths for Zeabur deployment
   server: {
     headers: {
       'Cross-Origin-Embedder-Policy': 'credentialless',

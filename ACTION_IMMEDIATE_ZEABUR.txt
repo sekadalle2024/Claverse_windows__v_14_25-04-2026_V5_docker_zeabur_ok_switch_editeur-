@@ -1,44 +1,55 @@
 ═══════════════════════════════════════════════════════════════════
-🎯 COMMENCER ICI MAINTENANT
+⚡ ACTION IMMÉDIATE - 2 MINUTES
 ═══════════════════════════════════════════════════════════════════
 
-Bonjour ! Voici ce que vous devez faire MAINTENANT.
+🚨 VOTRE BACKEND BUILD LE FRONTEND AU LIEU DU BACKEND !
 
 ═══════════════════════════════════════════════════════════════════
-⚡ ACTION IMMÉDIATE (5 MINUTES)
+✅ SOLUTION (2 MINUTES)
 ═══════════════════════════════════════════════════════════════════
 
 1. Aller sur: https://zeabur.com/dashboard
 
-2. Cliquer sur le service "Backend"
+2. Cliquer sur votre projet
 
-3. Settings → Service Name: "frontend" → "backend"
+3. Cliquer sur le service "Backend" (pybackend.zeabur.app)
 
-4. Save → Redeploy
+4. Aller dans "Settings"
 
-5. Attendre 5 minutes
+5. Trouver "Service Name" et changer:
+   
+   DE:  [frontend ▼]
+   
+   VERS: [backend  ▼]
 
-6. Tester: https://pybackend.zeabur.app/health
+6. Cliquer "Save"
 
-═══════════════════════════════════════════════════════════════════
-📚 POUR PLUS DE DÉTAILS
-═══════════════════════════════════════════════════════════════════
+7. Cliquer "Redeploy"
 
-Ouvrir dans cet ordre:
+8. Attendre 5 minutes
 
-1. LIRE_MAINTENANT_DEPLOIEMENT_ZEABUR.txt (1 min)
-   → Vue d'ensemble rapide
-
-2. 00_CORRECTION_ZEABUR_MAINTENANT_20_AVRIL_2026.txt (10 min)
-   → Guide complet avec checklist
-
-3. GUIDE_VISUEL_COMPARAISON_ZEABUR_20_AVRIL_2026.txt (5 min)
-   → Comparaisons avant/après
+9. Tester: https://pybackend.zeabur.app/health
 
 ═══════════════════════════════════════════════════════════════════
-🎯 C'EST TOUT !
+✅ VÉRIFICATION
 ═══════════════════════════════════════════════════════════════════
 
-Allez sur Zeabur et changez le Service Name ! 🚀
+Logs Backend doivent montrer:
+✅ "pip install"
+✅ "uvicorn running"
+
+Logs Backend NE doivent PAS montrer:
+❌ "dist/assets/*.js"
+
+═══════════════════════════════════════════════════════════════════
+📚 DOCUMENTATION COMPLÈTE
+═══════════════════════════════════════════════════════════════════
+
+Pour plus de détails:
+→ START_HERE_DEPLOIEMENT_ZEABUR.txt
+
+═══════════════════════════════════════════════════════════════════
+
+C'EST TOUT ! 🚀
 
 ═══════════════════════════════════════════════════════════════════
