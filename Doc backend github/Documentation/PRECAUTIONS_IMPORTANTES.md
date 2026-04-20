@@ -1,5 +1,26 @@
 # Précautions Importantes - Repository Backend
 
+**Dernière mise à jour**: 20 Avril 2026 - Version 2.0.0
+
+## 📋 NOUVEAUTÉS VERSION 2.0.0
+
+### Script Amélioré Disponible
+
+Un nouveau script amélioré est disponible : `push-backend-to-github-improved.ps1`
+
+**Améliorations** :
+- ✅ Vérification automatique des fichiers critiques (main.py, endpoint_editeur.py, requirements.txt)
+- ✅ Validation avant push avec résumé détaillé
+- ✅ Logs colorés et structurés
+- ✅ Gestion d'erreurs robuste avec restauration automatique
+- ✅ Confirmation utilisateur obligatoire
+- ✅ Vérification finale complète
+
+**Utilisation** :
+```powershell
+.\Doc backend github\Scripts\push-backend-to-github-improved.ps1
+```
+
 ## ⚠️ AVERTISSEMENTS CRITIQUES
 
 ### 1. 🔴 Push avec --force
@@ -64,10 +85,24 @@ git add py_backend/
 - ✅ Taille du repository backend réduite
 - ⚠️ Modifications hors py_backend/ non sauvegardées dans ce repo
 
+**Fichiers Critiques Vérifiés** :
+- ✅ `py_backend/main.py` - Point d'entrée FastAPI
+- ✅ `py_backend/endpoint_editeur.py` - Endpoint de test switch backend
+- ✅ `py_backend/requirements.txt` - Dépendances Python
+- ✅ Tous les autres fichiers .py du backend
+
 **Vérification** :
 ```powershell
 git status py_backend/
 ```
+
+### 4. 🆕 Fichiers Nouveaux à Surveiller
+
+**endpoint_editeur.py** :
+- Fichier créé le 20 Avril 2026
+- Endpoint de test pour switch backend localhost/cloud
+- Doit TOUJOURS être inclus dans les sauvegardes
+- Vérification automatique dans le script amélioré
 
 ## 🛡️ Mesures de Sécurité
 
@@ -79,15 +114,42 @@ git status py_backend/
    git status py_backend/
    ```
 
-2. **Vérifier le Remote Actuel**
+2. **Vérifier les Fichiers Critiques**
+   ```powershell
+   # Vérifier que endpoint_editeur.py existe
+   Test-Path py_backend/endpoint_editeur.py
+   
+   # Vérifier que main.py existe
+   Test-Path py_backend/main.py
+   
+   # Vérifier requirements.txt
+   Test-Path py_backend/requirements.txt
+   ```
+
+3. **Vérifier le Remote Actuel**
    ```powershell
    git remote -v
    ```
 
-3. **Vérifier la Branche**
+4. **Vérifier la Branche**
    ```powershell
    git branch
    ```
+
+### Utilisation du Script Amélioré (RECOMMANDÉ)
+
+Le script amélioré effectue TOUTES ces vérifications automatiquement :
+
+```powershell
+.\Doc backend github\Scripts\push-backend-to-github-improved.ps1
+```
+
+**Avantages** :
+- ✅ Vérification automatique des fichiers critiques
+- ✅ Confirmation obligatoire avant push
+- ✅ Logs détaillés et colorés
+- ✅ Restauration automatique en cas d'erreur
+- ✅ Résumé complet de l'opération
 
 ### Pendant le Push
 
@@ -245,5 +307,13 @@ En cas de problème persistant :
 
 ---
 
-**Date de dernière mise à jour** : 19 avril 2026
-**Version** : 1.0
+**Date de dernière mise à jour** : 20 avril 2026
+**Version** : 2.0.0
+
+**Changements Version 2.0.0** :
+- ✅ Ajout du script amélioré `push-backend-to-github-improved.ps1`
+- ✅ Vérification automatique des fichiers critiques
+- ✅ Ajout de endpoint_editeur.py dans les fichiers surveillés
+- ✅ Amélioration de la gestion d'erreurs
+- ✅ Logs détaillés et colorés
+- ✅ Confirmation obligatoire avant push
