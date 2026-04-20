@@ -10,14 +10,19 @@
 
 > **🚨 IMPORTANT:** Des erreurs de déploiement ont été identifiées et corrigées.
 > 
+> **📖 LIRE EN PREMIER:** [START_HERE_DEPLOIEMENT_ZEABUR.txt](../START_HERE_DEPLOIEMENT_ZEABUR.txt) (à la racine)
+> 
 > **Action immédiate:** Lire [START_HERE_20_AVRIL_2026.txt](./START_HERE_20_AVRIL_2026.txt)
 > 
 > **Guide complet:** [QUICK_FIX_DEPLOIEMENT_20_AVRIL_2026.txt](./QUICK_FIX_DEPLOIEMENT_20_AVRIL_2026.txt)
 
-### Problèmes Corrigés
+### Problèmes Identifiés et Solutions
 
 - ✅ **Frontend:** Erreur nginx "events directive" → Fichier nginx.conf supprimé
-- ⏳ **Backend:** Configuration service incorrecte → À corriger dans Zeabur Dashboard
+- ⚠️ **Backend:** Configuration service incorrecte → **À corriger dans Zeabur Dashboard**
+  - **Problème:** Service Name = "frontend" au lieu de "backend"
+  - **Solution:** Modifier dans Settings → Service Name → "backend"
+  - **Temps:** 2 minutes
 
 ---
 

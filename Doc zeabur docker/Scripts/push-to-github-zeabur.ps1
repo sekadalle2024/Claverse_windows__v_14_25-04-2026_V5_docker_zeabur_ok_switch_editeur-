@@ -142,19 +142,23 @@ Write-Host "▶ Création du commit" -ForegroundColor Yellow
 Write-Host ("─" * 60) -ForegroundColor DarkGray
 
 $commitMessage = @"
-feat: Docker Compose pour déploiement Zeabur
+fix: Correction build frontend Zeabur (npm + SDK)
 
-- Ajout docker-compose.yml avec services frontend/backend
-- Création Dockerfile.frontend (React + Nginx multi-stage)
-- Adaptation py_backend/Dockerfile pour Zeabur (port 8080)
-- Configuration CORS pour production
-- Switch backend dynamique préservé
-- Health checks configurés
-- Volumes pour persistance des données
+Corrections appliquées:
+1. npm ci → npm install --production=false
+   - Résolution erreur package-lock.json incompatible
+   - npm install plus tolérant et fonctionne toujours
+
+2. Ajout COPY sdk/ dans Dockerfile.frontend
+   - Résolution erreur "Could not resolve ../../sdk/src/ClaraFlowRunner"
+   - SDK nécessaire pour AgentRunnerSDK.tsx et AgentRunner.tsx
+
+Fichiers modifiés:
+- Dockerfile.frontend: 2 corrections appliquées
 
 Déploiement:
-- Frontend: https://prclaravi.zeabur.app
-- Backend: https://pybackend.zeabur.app
+- Frontend: https://prclaravi.zeabur.app (prêt après redéploiement)
+- Backend: https://pybackend.zeabur.app (déjà fonctionnel ✅)
 "@
 
 try {
