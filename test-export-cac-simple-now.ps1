@@ -77,7 +77,7 @@ try {
     $jsonBody = $testData | ConvertTo-Json -Depth 10
     
     $response = Invoke-WebRequest `
-        -Uri "http://localhost:5000/export-synthese-cac-final" `
+        -Uri "http://localhost:5000/api/word/export-synthese-cac-final" `
         -Method Post `
         -ContentType "application/json" `
         -Body $jsonBody `
