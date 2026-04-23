@@ -109,7 +109,8 @@ Doc backend github/
 ## 🔗 Liens Rapides
 
 ### Repositories GitHub
-- **Backend** : https://github.com/sekadalle2024/Back-end-python-V0_03_03_2026.git
+- **Backend V5** : https://github.com/sekadalle2024/Back-end-python-V5_23_04_2026--tree-master.git
+- **Backend (Old)** : https://github.com/sekadalle2024/Back-end-python-V0_03_03_2026.git
 - **Principal** : https://github.com/sekadalle2024/Claverse_windows__v_9_19-04-2026_V5-Export_CAC-V0-Public.git
 
 ### Commandes Essentielles
@@ -136,6 +137,7 @@ git status py_backend/
 | Date | Version | Description |
 |------|---------|-------------|
 | 19/04/2026 | 1.0 | Création de la documentation complète |
+| 23/04/2026 | 5.0 | Mise à jour vers Backend V5 (Isolation totale) |
 
 ## 🎓 Apprentissage
 
@@ -184,5 +186,5 @@ En cas de problème :
 
 ---
 
-**Dernière mise à jour** : 19 avril 2026
-**Version** : 1.0
+**Dernière mise à jour** : 23 avril 2026
+**Version** : 5.0

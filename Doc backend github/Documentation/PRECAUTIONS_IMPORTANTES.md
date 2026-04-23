@@ -1,8 +1,17 @@
 # Précautions Importantes - Repository Backend
 
-**Dernière mise à jour**: 20 Avril 2026 - Version 2.0.0
+**Dernière mise à jour**: 23 Avril 2026 - Version 3.0.0 (NOUVELLE PROCÉDURE)
 
-## 📋 NOUVEAUTÉS VERSION 2.0.0
+## 🚀 NOUVEAUTÉ VERSION 3.0.0
+Une nouvelle procédure simplifiée et sécurisée est disponible. 
+**IL EST FORTEMENT RECOMMANDÉ d'utiliser cette version pour éviter de modifier le remote du projet global.**
+
+- **Procédure**: [Documentation/PROCEDURE_ACTUALISEE_V3.md](PROCEDURE_ACTUALISEE_V3.md)
+- **Script**: `Doc backend github\Scripts\push-backend-to-github-V3.ps1`
+
+---
+
+## 📋 NOUVEAUTÉS VERSION 2.0.0 (Ancienne)
 
 ### Script Amélioré Disponible
 

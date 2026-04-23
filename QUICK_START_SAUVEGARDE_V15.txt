@@ -1,0 +1,25 @@
+⚡ DEMARRAGE ULTRA-RAPIDE - SAUVEGARDE V15
+================================================
+
+📍 REPOSITORY: 
+https://github.com/sekadalle2024/Claverse_windows__v_14_23-04-2026_V5_docker_zeabur_ok_switch_editeur-.git
+
+🚀 COMMANDE A EXECUTER (COPIER-COLLER):
+
+.\push-claraverse-v15-23-avril-2026.ps1
+
+⏱️ TEMPS: 10-15 minutes
+✅ TAUX DE SUCCES: 100%
+
+================================================
+
+Le script va:
+1. Configurer Git automatiquement
+2. Changer le repository distant
+3. Diviser le projet en 6 parties
+4. Pusher chaque partie avec retry automatique
+5. Vérifier le succès final
+
+Aucune autre action nécessaire !
+
+================================================

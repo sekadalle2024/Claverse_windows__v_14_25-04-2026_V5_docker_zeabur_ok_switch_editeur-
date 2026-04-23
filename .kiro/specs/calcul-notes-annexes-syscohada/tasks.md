@@ -114,12 +114,12 @@ This implementation plan creates a modular Python system to automate the calcula
     - Implement sauvegarder() method with timestamped filename
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7_
 
-  - [-] 8.2 Write property test for Excel export structure preservation
+  - [x] 8.2 Write property test for Excel export structure preservation
     - **Property 15: Excel Export Structure Preservation**
     - **Validates: Requirements 9.1, 9.2, 9.3, 9.4, 9.5**
 
 - [ ] 9. Implement Mapping_Manager module
-  - [ ] 9.1 Create mapping_manager.py with MappingManager class
+  - [x] 9.1 Create mapping_manager.py with MappingManager class
     - Implement __init__(fichier_json: str) method
     - Implement charger_correspondances() method with JSON validation
     - Implement obtenir_racines_compte() method for account root lookup
@@ -128,12 +128,12 @@ This implementation plan creates a modular Python system to automate the calcula
     - Define custom exception: InvalidJSONException
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7_
 
-  - [ ]* 9.2 Write property test for mapping lookup consistency
+  - [x] 9.2 Write property test for mapping lookup consistency
     - **Property 12: Mapping Lookup Consistency**
     - **Validates: Requirements 7.2, 7.5, 7.7**
 
 - [ ] 10. Implement Coherence_Validator module
-  - [ ] 10.1 Create coherence_validator.py with CoherenceValidator class
+  - [x] 10.1 Create coherence_validator.py with CoherenceValidator class
     - Implement __init__(notes: Dict[str, pd.DataFrame]) method
     - Implement valider_total_immobilisations() method
     - Implement valider_dotations_amortissements() method
@@ -142,16 +142,16 @@ This implementation plan creates a modular Python system to automate the calcula
     - Implement generer_rapport_coherence() method for HTML report
     - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7_
 
-  - [ ]* 10.2 Write property test for inter-note coherence validation
+  - [x] 10.2 Write property test for inter-note coherence validation
     - **Property 16: Inter-Note Coherence Validation**
     - **Validates: Requirements 10.1, 10.2, 10.3**
 
-  - [ ]* 10.3 Write property test for coherence rate calculation
+  - [x] 10.3 Write property test for coherence rate calculation
     - **Property 17: Coherence Rate Calculation**
     - **Validates: Requirements 10.5, 10.6**
 
 - [ ] 11. Implement Trace_Manager module
-  - [ ] 11.1 Create trace_manager.py with TraceManager class
+  - [x] 11.1 Create trace_manager.py with TraceManager class
     - Implement __init__(numero_note: str) method
     - Implement enregistrer_calcul() method for calculation tracing
     - Implement enregistrer_metadata() method for generation metadata
@@ -160,15 +160,15 @@ This implementation plan creates a modular Python system to automate the calcula
     - Implement gerer_historique() method to keep last 10 traces
     - _Requirements: 15.1, 15.2, 15.3, 15.4, 15.5, 15.6, 15.7_
 
-  - [ ]* 11.2 Write property test for calculation traceability
+  - [x] 11.2 Write property test for calculation traceability
     - **Property 22: Calculation Traceability**
     - **Validates: Requirements 15.1, 15.2, 15.3, 15.4**
 
-  - [ ]* 11.3 Write property test for trace history management
+  - [x] 11.3 Write property test for trace history management
     - **Property 23: Trace History Management**
     - **Validates: Requirements 15.7**
 
-  - [ ]* 11.4 Write property test for trace export format conversion
+  - [-] 11.4 Write property test for trace export format conversion
     - **Property 24: Trace Export Format Conversion**
     - **Validates: Requirements 15.6**
 
