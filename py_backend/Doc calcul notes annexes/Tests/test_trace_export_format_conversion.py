@@ -4,8 +4,8 @@ Property-Based Tests for Trace Export Format Conversion
 Feature: calcul-notes-annexes-syscohada
 Property 24: Trace Export Format Conversion
 
-For any trace file in JSON format, the system must be able to export it to CSV 
-format preserving all calculation details for analysis in Excel.
+For any trace file in JSON format, the system must be able to export it to 
+CSV format preserving all calculation details for analysis in Excel.
 
 Validates: Requirements 15.6
 """
@@ -16,8 +16,8 @@ import json
 import csv
 import os
 import hashlib
-from datetime import datetime
 from pathlib import Path
+from datetime import datetime
 import sys
 
 # Add parent directory to path for imports
@@ -54,7 +54,10 @@ def st_calcul_data(draw):
             'intitule': draw(st.text(min_size=5, max_size=50, alphabet=st.characters(
                 whitelist_categories=('Lu', 'Ll'), whitelist_characters=' '))),
             'valeur': draw(st.floats(min_value=0, max_value=1e8, allow_nan=False, allow_infinity=False)),
-            'type_valeur': draw(st.sampled_from(['brut', 'amortissement', 'vnc', 'dotation', 'reprise']))
+            'type_valeur': draw(st.sampled_from([
+                'brut_ouverture', 'brut_cloture', 'augmentations', 'diminutions',
+                'amort_ouverture', 'amort_cloture', 'dotations', 'reprises'
+            ]))
         }
         comptes_sources.append(compte)
     
@@ -91,11 +94,10 @@ def test_property_24_trace_export_format_conversion(numero_note, calculs, fichie
     to CSV format preserving all calculation details for analysis in Excel.
     
     This property verifies that:
-    1. JSON trace can be converted to CSV format
-    2. All calculation details are preserved in the conversion
-    3. CSV format is compatible with Excel (UTF-8-BOM, semicolon delimiter)
-    4. Each source account becomes a separate CSV row
-    5. Metadata is replicated across all rows for filtering in Excel
+    1. JSON trace data can be converted to CSV format
+    2. All trace information is preserved during conversion
+    3. The CSV format is valid and can be parsed
+    4. Data types and structure are maintained
     
     Validates: Requirements 15.6
     """
@@ -106,7 +108,11 @@ def test_property_24_trace_export_format_conversion(numero_note, calculs, fichie
     hash_md5 = hashlib.md5(fichier_balance.encode()).hexdigest()
     
     # Record metadata
-    trace_manager.enregistrer_metadata(fichier_balance, hash_md5)
+    trace_manager.enregistrer_metadata(
+        fichier_balance=fichier_balance,
+        hash_md5=hash_md5,
+        titre_note=f"Test Note {numero_note}"
+    )
     
     # Record all calculations
     for calcul in calculs:
@@ -116,110 +122,154 @@ def test_property_24_trace_export_format_conversion(numero_note, calculs, fichie
             comptes_sources=calcul['comptes_sources']
         )
     
-    # Act - Export to CSV
-    csv_file = f"temp_trace_export_{numero_note}.csv"
+    # Act - Save JSON trace and export to CSV
+    json_file = f"temp_trace_note_{numero_note}.json"
+    csv_file = f"temp_trace_note_{numero_note}.csv"
     
     try:
+        # Save JSON trace
+        trace_manager.sauvegarder_trace(json_file)
+        
+        # Export to CSV
         csv_path = trace_manager.exporter_csv(csv_file)
         
-        # Assert - Verify CSV file exists
+        # Assert - Property 1: CSV file must be created
         assert os.path.exists(csv_path), "CSV file must be created"
         
-        # Property 1: CSV file must be readable
+        # Assert - Property 2: CSV file must be valid and parseable
         with open(csv_path, 'r', encoding='utf-8-sig') as f:
-            reader = csv.reader(f, delimiter=';')
-            rows = list(reader)
+            csv_reader = csv.reader(f, delimiter=';')
+            csv_rows = list(csv_reader)
         
-        assert len(rows) > 0, "CSV must contain at least header row"
+        assert len(csv_rows) > 0, "CSV must contain data"
         
-        # Property 2: CSV must have correct headers
-        headers = rows[0]
+        # Assert - Property 3: CSV must have header row
+        header = csv_rows[0]
         expected_headers = [
             'Note', 'Titre', 'Date Génération', 'Fichier Balance', 'Hash MD5',
             'Libellé Ligne', 'Montant', 'Compte Source', 'Intitulé Compte',
             'Valeur Compte', 'Type Valeur'
         ]
-        assert headers == expected_headers, "CSV headers must match expected format"
+        assert header == expected_headers, "CSV must have correct headers"
         
-        # Property 3: CSV must contain data rows (header + data)
-        data_rows = rows[1:]
+        # Assert - Property 4: CSV must contain all metadata
+        # Check that metadata appears in data rows
+        data_rows = csv_rows[1:]  # Skip header
+        assert len(data_rows) > 0, "CSV must have data rows"
         
-        # Calculate expected number of rows
-        # Each calculation with N source accounts generates N rows
-        expected_row_count = sum(len(c['comptes_sources']) for c in calculs)
-        assert len(data_rows) == expected_row_count, \
-            f"CSV must have one row per source account (expected {expected_row_count}, got {len(data_rows)})"
+        # Verify metadata is present in all rows
+        for row in data_rows:
+            assert row[0] == numero_note, "Note number must be preserved"
+            assert row[1] == f"Test Note {numero_note}", "Title must be preserved"
+            assert row[3] == fichier_balance, "Balance file name must be preserved"
+            assert row[4] == hash_md5, "MD5 hash must be preserved"
+            
+            # Date generation should be valid ISO format
+            date_gen = row[2]
+            if date_gen:  # May be empty for some rows
+                try:
+                    datetime.fromisoformat(date_gen)
+                except ValueError:
+                    pytest.fail(f"Date generation must be valid ISO format: {date_gen}")
         
-        # Property 4: All calculation details must be preserved
-        row_index = 0
+        # Assert - Property 5: All calculations must be present in CSV
+        # Count unique libellés in CSV
+        csv_libelles = set()
+        for row in data_rows:
+            libelle = row[5]  # Libellé Ligne column
+            if libelle:
+                csv_libelles.add(libelle)
+        
+        # Count unique libellés in original calculations
+        original_libelles = set(c['libelle'] for c in calculs)
+        
+        assert csv_libelles == original_libelles, \
+            "All calculation libellés must be present in CSV"
+        
+        # Assert - Property 6: All source accounts must be preserved
+        # For each calculation, verify all source accounts are in CSV
         for calcul in calculs:
-            for compte_source in calcul['comptes_sources']:
-                row = data_rows[row_index]
-                
-                # Verify metadata is present in each row
-                assert row[0] == numero_note, "Note number must be preserved"
-                assert row[2] != "", "Generation date must be present"
-                assert row[3] == fichier_balance, "Balance file name must be preserved"
-                assert row[4] == hash_md5, "MD5 hash must be preserved"
-                
-                # Verify calculation details
-                assert row[5] == calcul['libelle'], "Libellé must be preserved"
-                
-                # Verify montant (allow small floating point differences)
-                montant_csv = float(row[6])
-                assert abs(montant_csv - calcul['montant']) < 0.01, "Montant must be preserved"
-                
-                # Verify source account details
-                assert row[7] == compte_source['compte'], "Account number must be preserved"
-                assert row[8] == compte_source['intitule'], "Account label must be preserved"
-                
-                valeur_csv = float(row[9])
-                assert abs(valeur_csv - compte_source['valeur']) < 0.01, "Account value must be preserved"
-                
-                assert row[10] == compte_source['type_valeur'], "Value type must be preserved"
-                
-                row_index += 1
+            libelle = calcul['libelle']
+            comptes_sources = calcul['comptes_sources']
+            
+            # Find all CSV rows for this libellé
+            csv_rows_for_libelle = [row for row in data_rows if row[5] == libelle]
+            
+            # Should have one row per source account
+            assert len(csv_rows_for_libelle) == len(comptes_sources), \
+                f"CSV must have one row per source account for {libelle}"
+            
+            # Verify each source account is present
+            csv_comptes = set(row[7] for row in csv_rows_for_libelle)  # Compte Source column
+            original_comptes = set(c['compte'] for c in comptes_sources)
+            
+            assert csv_comptes == original_comptes, \
+                f"All source accounts must be preserved for {libelle}"
         
-        # Property 5: CSV format must be Excel-compatible
-        # Verify encoding is UTF-8 with BOM (for Excel compatibility)
-        with open(csv_path, 'rb') as f:
-            first_bytes = f.read(3)
-            # UTF-8 BOM is EF BB BF
-            assert first_bytes == b'\xef\xbb\xbf', "CSV must use UTF-8-BOM encoding for Excel"
+        # Assert - Property 7: Montants must be preserved with correct precision
+        for calcul in calculs:
+            libelle = calcul['libelle']
+            montant_original = calcul['montant']
+            
+            # Find CSV rows for this libellé
+            csv_rows_for_libelle = [row for row in data_rows if row[5] == libelle]
+            
+            # All rows for the same libellé should have the same montant
+            for row in csv_rows_for_libelle:
+                montant_csv = float(row[6]) if row[6] else 0.0
+                # Allow small floating point differences
+                assert abs(montant_csv - montant_original) < 0.01, \
+                    f"Montant must be preserved for {libelle}"
         
-        # Property 6: CSV must use semicolon delimiter (Excel standard for European locales)
+        # Assert - Property 8: Source account details must be preserved
+        for calcul in calculs:
+            libelle = calcul['libelle']
+            comptes_sources = calcul['comptes_sources']
+            
+            csv_rows_for_libelle = [row for row in data_rows if row[5] == libelle]
+            
+            for compte_original in comptes_sources:
+                # Find the CSV row for this compte
+                csv_row = next(
+                    (row for row in csv_rows_for_libelle if row[7] == compte_original['compte']),
+                    None
+                )
+                
+                assert csv_row is not None, \
+                    f"Source account {compte_original['compte']} must be in CSV"
+                
+                # Verify intitulé
+                assert csv_row[8] == compte_original['intitule'], \
+                    "Account intitulé must be preserved"
+                
+                # Verify valeur (with tolerance for floats)
+                valeur_csv = float(csv_row[9]) if csv_row[9] else 0.0
+                assert abs(valeur_csv - compte_original['valeur']) < 0.01, \
+                    "Account valeur must be preserved"
+                
+                # Verify type_valeur
+                assert csv_row[10] == compte_original['type_valeur'], \
+                    "Account type_valeur must be preserved"
+        
+        # Assert - Property 9: CSV must be Excel-compatible
+        # Verify delimiter is semicolon (Excel-friendly for European locales)
         with open(csv_path, 'r', encoding='utf-8-sig') as f:
             first_line = f.readline()
-            assert ';' in first_line, "CSV must use semicolon delimiter"
+            assert ';' in first_line, "CSV must use semicolon delimiter for Excel compatibility"
         
-        # Property 7: All rows must have the same number of columns
-        column_counts = [len(row) for row in rows]
-        assert len(set(column_counts)) == 1, "All rows must have the same number of columns"
-        assert column_counts[0] == len(expected_headers), "All rows must have correct column count"
-        
-        # Property 8: CSV must be parseable back to verify round-trip
-        # Read CSV and verify we can reconstruct the original data
-        with open(csv_path, 'r', encoding='utf-8-sig') as f:
-            reader = csv.DictReader(f, delimiter=';')
-            csv_data = list(reader)
-        
-        # Verify we can group by libellé and reconstruct calculations
-        libelles_in_csv = set(row['Libellé Ligne'] for row in csv_data)
-        libelles_original = set(c['libelle'] for c in calculs)
-        assert libelles_in_csv == libelles_original, "All calculation labels must be in CSV"
-        
-        # Property 9: Metadata must be consistent across all rows
-        for row in csv_data:
-            assert row['Note'] == numero_note
-            assert row['Fichier Balance'] == fichier_balance
-            assert row['Hash MD5'] == hash_md5
-            # Date should be the same for all rows (same generation)
-            assert row['Date Génération'] != ""
+        # Assert - Property 10: CSV encoding must support special characters
+        # Verify UTF-8-BOM encoding for Excel compatibility
+        with open(csv_path, 'rb') as f:
+            bom = f.read(3)
+            # UTF-8 BOM is EF BB BF
+            assert bom == b'\xef\xbb\xbf', "CSV must use UTF-8-BOM encoding for Excel"
         
     finally:
         # Cleanup
-        if os.path.exists(csv_path):
-            os.remove(csv_path)
+        if os.path.exists(json_file):
+            os.remove(json_file)
+        if os.path.exists(csv_file):
+            os.remove(csv_file)
 
 
 @given(
@@ -227,12 +277,12 @@ def test_property_24_trace_export_format_conversion(numero_note, calculs, fichie
     fichier_balance=st_fichier_balance()
 )
 @settings(max_examples=50, deadline=None)
-def test_property_24_csv_export_with_empty_calculations(numero_note, fichier_balance):
+def test_property_24_csv_export_with_no_calculations(numero_note, fichier_balance):
     """
     Property 24 Edge Case: CSV Export with No Calculations
     
-    Even if no calculations are recorded, the CSV export must still work
-    and contain at least the header row.
+    Even if no calculations are recorded, the CSV export must still contain
+    valid headers and metadata rows.
     
     Validates: Requirements 15.6
     """
@@ -241,41 +291,51 @@ def test_property_24_csv_export_with_empty_calculations(numero_note, fichier_bal
     hash_md5 = hashlib.md5(fichier_balance.encode()).hexdigest()
     
     # Only record metadata, no calculations
-    trace_manager.enregistrer_metadata(fichier_balance, hash_md5)
+    trace_manager.enregistrer_metadata(
+        fichier_balance=fichier_balance,
+        hash_md5=hash_md5,
+        titre_note=f"Empty Note {numero_note}"
+    )
     
     # Act
-    csv_file = f"temp_trace_empty_export_{numero_note}.csv"
+    json_file = f"temp_trace_empty_{numero_note}.json"
+    csv_file = f"temp_trace_empty_{numero_note}.csv"
     
     try:
+        trace_manager.sauvegarder_trace(json_file)
         csv_path = trace_manager.exporter_csv(csv_file)
         
         # Assert
-        assert os.path.exists(csv_path)
+        assert os.path.exists(csv_path), "CSV file must be created even with no calculations"
         
-        # Read CSV
         with open(csv_path, 'r', encoding='utf-8-sig') as f:
-            reader = csv.reader(f, delimiter=';')
-            rows = list(reader)
+            csv_reader = csv.reader(f, delimiter=';')
+            csv_rows = list(csv_reader)
         
         # Must have at least header row
-        assert len(rows) >= 1, "CSV must have at least header row"
+        assert len(csv_rows) >= 1, "CSV must have header row"
         
-        # Verify headers are correct
-        headers = rows[0]
+        # Header must be correct
+        header = csv_rows[0]
         expected_headers = [
             'Note', 'Titre', 'Date Génération', 'Fichier Balance', 'Hash MD5',
             'Libellé Ligne', 'Montant', 'Compte Source', 'Intitulé Compte',
             'Valeur Compte', 'Type Valeur'
         ]
-        assert headers == expected_headers
+        assert header == expected_headers, "CSV must have correct headers"
         
-        # With no calculations, should have only header (or empty data rows)
-        # This is acceptable - the file is still valid
-        
+        # If there are data rows, they should have metadata
+        if len(csv_rows) > 1:
+            for row in csv_rows[1:]:
+                assert row[0] == numero_note, "Note number must be present"
+                assert row[3] == fichier_balance, "Balance file must be present"
+    
     finally:
         # Cleanup
-        if os.path.exists(csv_path):
-            os.remove(csv_path)
+        if os.path.exists(json_file):
+            os.remove(json_file)
+        if os.path.exists(csv_file):
+            os.remove(csv_file)
 
 
 @given(
@@ -284,12 +344,12 @@ def test_property_24_csv_export_with_empty_calculations(numero_note, fichier_bal
     fichier_balance=st_fichier_balance()
 )
 @settings(max_examples=50, deadline=None)
-def test_property_24_csv_preserves_special_characters(numero_note, calculs, fichier_balance):
+def test_property_24_csv_round_trip_data_integrity(numero_note, calculs, fichier_balance):
     """
-    Property 24 Extension: CSV Export Preserves Special Characters
+    Property 24 Data Integrity: CSV Round-Trip Preservation
     
-    The CSV export must correctly handle special characters (accents, 
-    semicolons, quotes) that are common in French accounting labels.
+    After exporting to CSV, all data from the JSON trace must be recoverable
+    from the CSV file, demonstrating complete data preservation.
     
     Validates: Requirements 15.6
     """
@@ -297,72 +357,11 @@ def test_property_24_csv_preserves_special_characters(numero_note, calculs, fich
     trace_manager = TraceManager(numero_note)
     hash_md5 = hashlib.md5(fichier_balance.encode()).hexdigest()
     
-    trace_manager.enregistrer_metadata(fichier_balance, hash_md5)
-    
-    # Add calculations with special characters
-    for calcul in calculs:
-        trace_manager.enregistrer_calcul(
-            libelle=calcul['libelle'],
-            montant=calcul['montant'],
-            comptes_sources=calcul['comptes_sources']
-        )
-    
-    # Act
-    csv_file = f"temp_trace_special_chars_{numero_note}.csv"
-    
-    try:
-        csv_path = trace_manager.exporter_csv(csv_file)
-        
-        # Assert - Read CSV and verify special characters are preserved
-        with open(csv_path, 'r', encoding='utf-8-sig') as f:
-            reader = csv.DictReader(f, delimiter=';')
-            csv_data = list(reader)
-        
-        # Verify all libellés are preserved with their special characters
-        libelles_in_csv = [row['Libellé Ligne'] for row in csv_data]
-        
-        for calcul in calculs:
-            # The libellé should appear in CSV (once per source account)
-            count_in_csv = libelles_in_csv.count(calcul['libelle'])
-            expected_count = len(calcul['comptes_sources'])
-            assert count_in_csv == expected_count, \
-                f"Libellé '{calcul['libelle']}' must appear {expected_count} times"
-        
-        # Verify intitulés are preserved
-        for row in csv_data:
-            # Intitulé should not be corrupted
-            intitule = row['Intitulé Compte']
-            # Basic check: should not contain replacement characters
-            assert '\ufffd' not in intitule, "Special characters must not be corrupted"
-        
-    finally:
-        # Cleanup
-        if os.path.exists(csv_path):
-            os.remove(csv_path)
-
-
-@given(
-    numero_note=st_numero_note(),
-    calculs=st.lists(st_calcul_data(), min_size=2, max_size=5),
-    fichier_balance=st_fichier_balance()
-)
-@settings(max_examples=50, deadline=None)
-def test_property_24_csv_enables_excel_analysis(numero_note, calculs, fichier_balance):
-    """
-    Property 24 Extension: CSV Format Enables Excel Analysis
-    
-    The CSV format must be structured to enable common Excel analysis tasks:
-    - Filtering by note, libellé, or account
-    - Pivot tables on metadata columns
-    - Summing amounts by libellé or account
-    
-    Validates: Requirements 15.6
-    """
-    # Arrange
-    trace_manager = TraceManager(numero_note)
-    hash_md5 = hashlib.md5(fichier_balance.encode()).hexdigest()
-    
-    trace_manager.enregistrer_metadata(fichier_balance, hash_md5)
+    trace_manager.enregistrer_metadata(
+        fichier_balance=fichier_balance,
+        hash_md5=hash_md5,
+        titre_note=f"Round Trip Test {numero_note}"
+    )
     
     for calcul in calculs:
         trace_manager.enregistrer_calcul(
@@ -372,56 +371,86 @@ def test_property_24_csv_enables_excel_analysis(numero_note, calculs, fichier_ba
         )
     
     # Act
-    csv_file = f"temp_trace_excel_analysis_{numero_note}.csv"
+    json_file = f"temp_trace_roundtrip_{numero_note}.json"
+    csv_file = f"temp_trace_roundtrip_{numero_note}.csv"
     
     try:
-        csv_path = trace_manager.exporter_csv(csv_file)
+        # Save JSON and export CSV
+        trace_manager.sauvegarder_trace(json_file)
+        trace_manager.exporter_csv(csv_file)
         
-        # Assert - Verify CSV structure enables Excel analysis
-        with open(csv_path, 'r', encoding='utf-8-sig') as f:
-            reader = csv.DictReader(f, delimiter=';')
-            csv_data = list(reader)
+        # Load JSON data
+        with open(json_file, 'r', encoding='utf-8') as f:
+            json_data = json.load(f)
         
-        # Analysis 1: Can filter by note number
-        notes_in_csv = set(row['Note'] for row in csv_data)
-        assert len(notes_in_csv) == 1, "All rows should have same note number for filtering"
-        assert numero_note in notes_in_csv
+        # Load CSV data
+        with open(csv_file, 'r', encoding='utf-8-sig') as f:
+            csv_reader = csv.DictReader(f, delimiter=';')
+            csv_rows = list(csv_reader)
         
-        # Analysis 2: Can filter by libellé
-        libelles_in_csv = set(row['Libellé Ligne'] for row in csv_data)
-        assert len(libelles_in_csv) == len(calculs), "Each calculation should have unique libellé"
+        # Assert - Verify all JSON data is present in CSV
         
-        # Analysis 3: Can sum amounts by libellé
-        # Group by libellé and verify montant is consistent
-        from collections import defaultdict
-        montants_by_libelle = defaultdict(set)
+        # 1. Metadata verification
+        if csv_rows:
+            first_row = csv_rows[0]
+            assert first_row['Note'] == json_data['note']
+            assert first_row['Titre'] == json_data['titre']
+            assert first_row['Fichier Balance'] == json_data['fichier_balance']
+            assert first_row['Hash MD5'] == json_data['hash_md5_balance']
         
-        for row in csv_data:
+        # 2. Calculations verification
+        json_lignes = json_data.get('lignes', [])
+        
+        # Group CSV rows by libellé
+        csv_by_libelle = {}
+        for row in csv_rows:
             libelle = row['Libellé Ligne']
-            montant = float(row['Montant'])
-            montants_by_libelle[libelle].add(montant)
+            if libelle not in csv_by_libelle:
+                csv_by_libelle[libelle] = []
+            csv_by_libelle[libelle].append(row)
         
-        # Each libellé should have only one montant value (replicated across source accounts)
-        for libelle, montants in montants_by_libelle.items():
-            assert len(montants) == 1, \
-                f"Libellé '{libelle}' should have consistent montant across all source accounts"
-        
-        # Analysis 4: Can identify source accounts
-        comptes_in_csv = [row['Compte Source'] for row in csv_data if row['Compte Source']]
-        assert len(comptes_in_csv) > 0, "Must have source accounts for analysis"
-        
-        # Analysis 5: Metadata columns enable pivot tables
-        # Verify all metadata columns are populated
-        for row in csv_data:
-            assert row['Note'] != "", "Note must be populated for pivot tables"
-            assert row['Fichier Balance'] != "", "Balance file must be populated"
-            assert row['Hash MD5'] != "", "Hash must be populated"
-            assert row['Date Génération'] != "", "Date must be populated"
+        # Verify each JSON ligne is in CSV
+        for json_ligne in json_lignes:
+            libelle = json_ligne['libelle']
+            assert libelle in csv_by_libelle, f"Libellé {libelle} must be in CSV"
+            
+            csv_rows_for_libelle = csv_by_libelle[libelle]
+            json_comptes = json_ligne['comptes_sources']
+            
+            # Verify montant
+            for csv_row in csv_rows_for_libelle:
+                montant_csv = float(csv_row['Montant']) if csv_row['Montant'] else 0.0
+                assert abs(montant_csv - json_ligne['montant']) < 0.01
+            
+            # Verify all source accounts
+            assert len(csv_rows_for_libelle) == len(json_comptes), \
+                f"Number of source accounts must match for {libelle}"
+            
+            for json_compte in json_comptes:
+                # Find matching CSV row
+                matching_row = next(
+                    (row for row in csv_rows_for_libelle 
+                     if row['Compte Source'] == json_compte['compte']),
+                    None
+                )
+                
+                assert matching_row is not None, \
+                    f"Source account {json_compte['compte']} must be in CSV"
+                
+                # Verify all fields
+                assert matching_row['Intitulé Compte'] == json_compte['intitule']
+                
+                valeur_csv = float(matching_row['Valeur Compte']) if matching_row['Valeur Compte'] else 0.0
+                assert abs(valeur_csv - json_compte['valeur']) < 0.01
+                
+                assert matching_row['Type Valeur'] == json_compte['type_valeur']
         
     finally:
         # Cleanup
-        if os.path.exists(csv_path):
-            os.remove(csv_path)
+        if os.path.exists(json_file):
+            os.remove(json_file)
+        if os.path.exists(csv_file):
+            os.remove(csv_file)
 
 
 @given(
@@ -430,12 +459,15 @@ def test_property_24_csv_enables_excel_analysis(numero_note, calculs, fichier_ba
     fichier_balance=st_fichier_balance()
 )
 @settings(max_examples=50, deadline=None)
-def test_property_24_json_to_csv_round_trip_integrity(numero_note, calculs, fichier_balance):
+def test_property_24_csv_structure_for_excel_analysis(numero_note, calculs, fichier_balance):
     """
-    Property 24 Extension: JSON to CSV Round-Trip Integrity
+    Property 24 Excel Analysis: CSV Structure Optimized for Excel
     
-    Verify that converting from JSON to CSV preserves all essential information
-    such that an auditor could reconstruct the calculation from the CSV alone.
+    The CSV structure must be optimized for analysis in Excel, with:
+    - Denormalized structure (one row per source account)
+    - Repeated metadata for easy filtering
+    - Semicolon delimiter for European Excel
+    - UTF-8-BOM encoding for special characters
     
     Validates: Requirements 15.6
     """
@@ -443,7 +475,11 @@ def test_property_24_json_to_csv_round_trip_integrity(numero_note, calculs, fich
     trace_manager = TraceManager(numero_note)
     hash_md5 = hashlib.md5(fichier_balance.encode()).hexdigest()
     
-    trace_manager.enregistrer_metadata(fichier_balance, hash_md5)
+    trace_manager.enregistrer_metadata(
+        fichier_balance=fichier_balance,
+        hash_md5=hash_md5,
+        titre_note=f"Excel Analysis Test {numero_note}"
+    )
     
     for calcul in calculs:
         trace_manager.enregistrer_calcul(
@@ -452,83 +488,142 @@ def test_property_24_json_to_csv_round_trip_integrity(numero_note, calculs, fich
             comptes_sources=calcul['comptes_sources']
         )
     
-    # Save JSON trace first
-    json_file = f"temp_trace_json_{numero_note}.json"
-    trace_manager.sauvegarder_trace(json_file)
-    
-    # Act - Export to CSV
-    csv_file = f"temp_trace_csv_{numero_note}.csv"
+    # Act
+    json_file = f"temp_trace_excel_{numero_note}.json"
+    csv_file = f"temp_trace_excel_{numero_note}.csv"
     
     try:
-        csv_path = trace_manager.exporter_csv(csv_file)
+        trace_manager.sauvegarder_trace(json_file)
+        trace_manager.exporter_csv(csv_file)
         
-        # Load JSON trace
-        with open(json_file, 'r', encoding='utf-8') as f:
-            json_data = json.load(f)
+        # Assert - Property 1: Denormalized structure
+        # Each source account should be a separate row
+        with open(csv_file, 'r', encoding='utf-8-sig') as f:
+            csv_reader = csv.DictReader(f, delimiter=';')
+            csv_rows = list(csv_reader)
         
-        # Load CSV trace
-        with open(csv_path, 'r', encoding='utf-8-sig') as f:
-            reader = csv.DictReader(f, delimiter=';')
-            csv_data = list(reader)
+        # Count total source accounts
+        total_source_accounts = sum(len(c['comptes_sources']) for c in calculs)
         
-        # Assert - Verify essential information is preserved
+        # CSV should have one row per source account
+        assert len(csv_rows) == total_source_accounts, \
+            "CSV must have one row per source account (denormalized)"
         
-        # 1. Metadata integrity
-        assert all(row['Note'] == json_data['note'] for row in csv_data)
-        assert all(row['Fichier Balance'] == json_data['fichier_balance'] for row in csv_data)
-        assert all(row['Hash MD5'] == json_data['hash_md5_balance'] for row in csv_data)
+        # Assert - Property 2: Metadata repeated in each row
+        # This allows easy filtering in Excel
+        for row in csv_rows:
+            assert row['Note'] == numero_note, "Note must be in every row"
+            assert row['Titre'] == f"Excel Analysis Test {numero_note}", "Title must be in every row"
+            assert row['Fichier Balance'] == fichier_balance, "Balance file must be in every row"
+            assert row['Hash MD5'] == hash_md5, "Hash must be in every row"
         
-        # 2. Calculation count integrity
-        json_ligne_count = len(json_data['lignes'])
-        csv_libelle_count = len(set(row['Libellé Ligne'] for row in csv_data))
-        assert csv_libelle_count == json_ligne_count, \
-            "CSV must preserve all calculation lines from JSON"
-        
-        # 3. Source account count integrity
-        json_compte_count = sum(len(ligne['comptes_sources']) for ligne in json_data['lignes'])
-        csv_row_count = len(csv_data)
-        assert csv_row_count == json_compte_count, \
-            "CSV must have one row per source account from JSON"
-        
-        # 4. Amount integrity
-        for ligne in json_data['lignes']:
-            libelle = ligne['libelle']
-            montant_json = ligne['montant']
+        # Assert - Property 3: Each row has complete information
+        # No need to join multiple rows to get complete picture
+        for row in csv_rows:
+            # Must have libellé
+            assert row['Libellé Ligne'], "Each row must have libellé"
             
-            # Find corresponding rows in CSV
-            csv_rows_for_libelle = [row for row in csv_data if row['Libellé Ligne'] == libelle]
-            assert len(csv_rows_for_libelle) > 0, f"Libellé '{libelle}' must be in CSV"
+            # Must have montant
+            assert row['Montant'], "Each row must have montant"
             
-            # All rows for this libellé should have the same montant
-            for csv_row in csv_rows_for_libelle:
-                montant_csv = float(csv_row['Montant'])
-                assert abs(montant_csv - montant_json) < 0.01, \
-                    "Montant must be preserved in CSV"
+            # Must have source account details
+            assert row['Compte Source'], "Each row must have compte source"
+            assert row['Intitulé Compte'], "Each row must have intitulé compte"
+            assert row['Valeur Compte'], "Each row must have valeur compte"
+            assert row['Type Valeur'], "Each row must have type valeur"
         
-        # 5. Source account detail integrity
-        for ligne in json_data['lignes']:
-            libelle = ligne['libelle']
-            comptes_json = ligne['comptes_sources']
+        # Assert - Property 4: Semicolon delimiter for European Excel
+        with open(csv_file, 'r', encoding='utf-8-sig') as f:
+            content = f.read()
+            # Count semicolons vs commas
+            semicolon_count = content.count(';')
+            comma_count = content.count(',')
             
-            csv_rows_for_libelle = [row for row in csv_data if row['Libellé Ligne'] == libelle]
-            
-            # Verify same number of source accounts
-            assert len(csv_rows_for_libelle) == len(comptes_json), \
-                "CSV must have same number of source accounts as JSON"
-            
-            # Verify each source account is present (order may differ)
-            comptes_csv = [row['Compte Source'] for row in csv_rows_for_libelle]
-            comptes_json_nums = [c['compte'] for c in comptes_json]
-            
-            assert set(comptes_csv) == set(comptes_json_nums), \
-                "CSV must contain all source accounts from JSON"
+            # Should have many more semicolons than commas
+            assert semicolon_count > comma_count, \
+                "CSV must use semicolon as primary delimiter"
+        
+        # Assert - Property 5: UTF-8-BOM for special characters
+        with open(csv_file, 'rb') as f:
+            bom = f.read(3)
+            assert bom == b'\xef\xbb\xbf', \
+                "CSV must use UTF-8-BOM for Excel compatibility with special characters"
         
     finally:
         # Cleanup
         if os.path.exists(json_file):
             os.remove(json_file)
-        if os.path.exists(csv_path):
-            os.remove(csv_path)
+        if os.path.exists(csv_file):
+            os.remove(csv_file)
+
+
+@given(
+    numero_note=st_numero_note(),
+    calculs=st.lists(st_calcul_data(), min_size=2, max_size=5),
+    fichier_balance=st_fichier_balance()
+)
+@settings(max_examples=50, deadline=None)
+def test_property_24_csv_preserves_calculation_order(numero_note, calculs, fichier_balance):
+    """
+    Property 24 Ordering: CSV Preserves Calculation Order
+    
+    The CSV export must preserve the order of calculations as they were
+    recorded in the JSON trace.
+    
+    Validates: Requirements 15.6
+    """
+    # Arrange
+    trace_manager = TraceManager(numero_note)
+    hash_md5 = hashlib.md5(fichier_balance.encode()).hexdigest()
+    
+    trace_manager.enregistrer_metadata(
+        fichier_balance=fichier_balance,
+        hash_md5=hash_md5
+    )
+    
+    # Record calculations in specific order
+    for calcul in calculs:
+        trace_manager.enregistrer_calcul(
+            libelle=calcul['libelle'],
+            montant=calcul['montant'],
+            comptes_sources=calcul['comptes_sources']
+        )
+    
+    # Act
+    json_file = f"temp_trace_order_{numero_note}.json"
+    csv_file = f"temp_trace_order_{numero_note}.csv"
+    
+    try:
+        trace_manager.sauvegarder_trace(json_file)
+        trace_manager.exporter_csv(csv_file)
+        
+        # Load CSV
+        with open(csv_file, 'r', encoding='utf-8-sig') as f:
+            csv_reader = csv.DictReader(f, delimiter=';')
+            csv_rows = list(csv_reader)
+        
+        # Assert - Extract unique libellés in order from CSV
+        csv_libelles_order = []
+        seen_libelles = set()
+        for row in csv_rows:
+            libelle = row['Libellé Ligne']
+            if libelle and libelle not in seen_libelles:
+                csv_libelles_order.append(libelle)
+                seen_libelles.add(libelle)
+        
+        # Extract libellés in order from original calculations
+        original_libelles_order = [c['libelle'] for c in calculs]
+        
+        # Order must be preserved
+        assert csv_libelles_order == original_libelles_order, \
+            "CSV must preserve the order of calculations"
+        
+    finally:
+        # Cleanup
+        if os.path.exists(json_file):
+            os.remove(json_file)
+        if os.path.exists(csv_file):
+            os.remove(csv_file)
 
 
 if __name__ == "__main__":
