@@ -172,12 +172,12 @@ This implementation plan creates a modular Python system to automate the calcula
     - **Property 24: Trace Export Format Conversion**
     - **Validates: Requirements 15.6**
 
-- [ ] 12. Checkpoint - Ensure all shared modules are complete
+- [x] 12. Checkpoint - Ensure all shared modules are complete
   - Ensure all tests pass, ask the user if questions arise.
 
 
 - [ ] 13. Create calculator template and Note 3A implementation
-  - [ ] 13.1 Create calculateur_note_template.py as base template
+  - [x] 13.1 Create calculateur_note_template.py as base template
     - Define CalculateurNote base class with common structure
     - Implement charger_balances() method using Balance_Reader
     - Implement calculer_ligne_note() method template

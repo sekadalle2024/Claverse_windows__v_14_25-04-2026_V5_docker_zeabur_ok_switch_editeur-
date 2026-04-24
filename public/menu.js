@@ -188,6 +188,10 @@
         {
           id: "papier-travail", title: "Papier de travail", icon: "📁",
           items: [
+            { text: "📐 Ajouter Schéma de calcul", action: () => this.ajouterSchemaCalcul(), shortcut: "Ctrl+Shift+K" },
+            { text: "🔄 Actualiser Schéma de calcul", action: () => this.actualiserSchemaCalcul() },
+            { text: "🗑️ Supprimer Schéma de calcul", action: () => this.supprimerSchemaCalcul() },
+            { text: "─────────────────────", action: null },
             { text: "📤 Importer X-Ref documentaire", action: () => this.importerXRefDocumentaire(), shortcut: "Ctrl+Shift+X" },
             { text: "📂 Ouvrir X-Ref documentaire", action: () => this.ouvrirXRefDocumentaire(), shortcut: "Ctrl+Shift+O" },
             { text: "📋 Afficher X-Ref documentaire", action: () => this.afficherXRefDocumentaire() },
@@ -417,6 +421,8 @@
         if (e.ctrlKey && e.shiftKey && e.key === "F" && this.targetTable) { e.preventDefault(); this.exportFrapIndividuelle(); }
         // Raccourci Export Synthèse CAC
         if (e.ctrlKey && e.shiftKey && e.key === "C" && this.targetTable) { e.preventDefault(); this.exportSyntheseCAC(); }
+        // Raccourci Ajouter Schéma de Calcul
+        if (e.ctrlKey && e.shiftKey && e.key === "K" && this.targetTable) { e.preventDefault(); this.ajouterSchemaCalcul(); }
       });
     }
 
@@ -10112,6 +10118,564 @@
       console.log(`🔍 [X-Ref] Recherche "${term}": ${results.length - 1} résultat(s)`);
       
       return results;
+    }
+
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════════
+     * SECTION: PAPIER DE TRAVAIL - SCHÉMA DE CALCUL
+     * ═══════════════════════════════════════════════════════════════════════════════
+     */
+
+    /**
+     * Ajouter un schéma de calcul à la table active
+     * Déclenche le traitement par SchemaCalculManager
+     */
+    ajouterSchemaCalcul() {
+      console.log("📐 [Schéma Calcul] ========== DÉBUT ==========");
+      console.log("📐 [Schéma Calcul] Ajout du schéma de calcul (méthode directe)");
+      
+      if (!this.targetTable) {
+        console.error("📐 [Schéma Calcul] ❌ Aucune table sélectionnée");
+        this.showAlert("⚠️ Aucune table sélectionnée.\n\nVeuillez cliquer sur une cellule de la table principale.");
+        return;
+      }
+
+      console.log("📐 [Schéma Calcul] ✅ Table sélectionnée:", this.targetTable);
+
+      try {
+        // Rechercher la div parente contenant les tables
+        const parentDiv = this.targetTable.closest('div.prose, div[class*="prose"]');
+        
+        if (!parentDiv) {
+          console.error("📐 [Schéma Calcul] ❌ Conteneur parent non trouvé");
+          this.showAlert("⚠️ Impossible de trouver le conteneur parent de la table.");
+          return;
+        }
+
+        console.log("📐 [Schéma Calcul] ✅ Conteneur parent trouvé");
+
+        // Rechercher toutes les tables dans la div
+        const tables = parentDiv.querySelectorAll("table");
+        console.log(`📐 [Schéma Calcul] Nombre de tables trouvées: ${tables.length}`);
+
+        if (tables.length < 2) {
+          this.showAlert("⚠️ Pas assez de tables dans cette section.\n\nLe schéma de calcul nécessite au moins 2 tables:\n- Une table avec 'Nature de test'\n- Une table principale avec Conclusion/Assertion/CTR/Ecart");
+          return;
+        }
+
+        // Rechercher la table avec "Nature de test"
+        let table2 = null;
+        let natureDeTest = null;
+
+        console.log("📐 [Schéma Calcul] Recherche de la table avec 'Nature de test'...");
+        for (let i = 0; i < tables.length; i++) {
+          const table = tables[i];
+          const result = this.extractNatureDeTestDirect(table);
+          console.log(`  Table ${i + 1}: ${result ? `✅ Nature trouvée: "${result}"` : "❌ Pas de nature"}`);
+          if (result) {
+            table2 = table;
+            natureDeTest = result;
+            break;
+          }
+        }
+
+        if (!table2 || !natureDeTest) {
+          this.showAlert("⚠️ Aucune table avec 'Nature de test' trouvée.\n\nLe schéma de calcul nécessite une table contenant:\n- Une colonne 'Nature de test'\n- Une valeur (Validation, Mouvement, Rapprochement, etc.)");
+          return;
+        }
+
+        console.log(`📐 [Schéma Calcul] ✅ Nature de test détectée: "${natureDeTest}"`);
+
+        // Trouver la table principale (avec Conclusion, Assertion, CTR ou Ecart)
+        let tablePrincipale = null;
+        
+        console.log("📐 [Schéma Calcul] Recherche de la table principale...");
+        for (let i = 0; i < tables.length; i++) {
+          const table = tables[i];
+          if (table === table2) {
+            console.log(`  Table ${i + 1}: ⏭️ Ignorée (c'est la table 2)`);
+            continue;
+          }
+          
+          const headers = this.getTableHeadersDirect(table);
+          console.log(`  Table ${i + 1}: En-têtes = [${headers.join(", ")}]`);
+          
+          if (this.isModelizedTableDirect(table)) {
+            tablePrincipale = table;
+            console.log(`  Table ${i + 1}: ✅ C'est la table principale!`);
+            break;
+          } else {
+            console.log(`  Table ${i + 1}: ❌ Pas de colonne requise`);
+          }
+        }
+
+        if (!tablePrincipale) {
+          this.showAlert("⚠️ Aucune table principale trouvée.\n\nLe schéma de calcul nécessite une table avec au moins une de ces colonnes:\n- Conclusion\n- Assertion\n- CTR\n- Ecart");
+          return;
+        }
+
+        // Vérifier si un schéma existe déjà
+        const existingSchema = this.findExistingSchemaCalculDirect(tablePrincipale);
+        
+        if (existingSchema) {
+          const response = confirm("Un schéma de calcul existe déjà pour cette table.\n\nVoulez-vous le remplacer ?");
+          if (response) {
+            existingSchema.remove();
+            console.log("🗑️ [Schéma Calcul] Schéma existant supprimé");
+          } else {
+            return;
+          }
+        }
+
+        // Créer le schéma de calcul
+        console.log("📐 [Schéma Calcul] 🎯 Création du schéma...");
+        this.createSchemaCalculTableDirect(tablePrincipale, natureDeTest);
+        
+        this.showQuickNotification(`✅ Schéma de calcul ajouté: ${natureDeTest}`);
+        console.log("📐 [Schéma Calcul] ✅ Schéma créé avec succès!");
+        console.log("📐 [Schéma Calcul] ========== FIN ==========");
+        
+      } catch (error) {
+        console.error("📐 [Schéma Calcul] ❌ ERREUR:", error);
+        console.error("📐 [Schéma Calcul] Stack trace:", error.stack);
+        this.showAlert(`❌ Erreur lors de l'ajout du schéma:\n\n${error.message}`);
+      }
+    }
+
+    /**
+     * Extraire la "Nature de test" d'une table
+     * Gère 3 cas:
+     * - Cas 1 horizontal (ligne): "Nature de test" | "Rapprochement"
+     * - Cas 2 vertical (colonne): "Nature de test" en en-tête, "Rapprochement" dans la cellule en dessous
+     * - Cas 3 colonne adjacente: Colonne "Nature de test" avec valeur dans cellule adjacente (même ligne)
+     */
+    extractNatureDeTestDirect(table) {
+      const rows = table.querySelectorAll("tr");
+      
+      console.log(`📐 [Nature] Analyse de table avec ${rows.length} ligne(s)`);
+      
+      // CAS 1: Recherche horizontale (dans les lignes)
+      for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+        const row = rows[rowIdx];
+        const cells = row.querySelectorAll("td, th");
+        
+        for (let i = 0; i < cells.length - 1; i++) {
+          const cellText = cells[i].textContent.trim().toLowerCase();
+          
+          if (cellText.includes("nature") && cellText.includes("test")) {
+            // La valeur est dans la cellule suivante (même ligne)
+            const valueCell = cells[i + 1];
+            if (valueCell && valueCell.textContent.trim() !== "") {
+              const value = valueCell.textContent.trim();
+              console.log(`📐 [Nature] ✅ Trouvée en horizontal (ligne ${rowIdx}): "${value}"`);
+              return value;
+            }
+          }
+        }
+      }
+      
+      // CAS 2: Recherche verticale (dans les colonnes)
+      // Parcourir TOUTES les lignes pour trouver "Nature de test"
+      for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+        const row = rows[rowIdx];
+        const cells = row.querySelectorAll("td, th");
+        
+        for (let colIdx = 0; colIdx < cells.length; colIdx++) {
+          const cellText = cells[colIdx].textContent.trim().toLowerCase();
+          
+          if (cellText.includes("nature") && cellText.includes("test")) {
+            console.log(`📐 [Nature] Colonne "Nature de test" trouvée à ligne ${rowIdx}, colonne ${colIdx}`);
+            
+            // Chercher la valeur dans les lignes suivantes, même colonne
+            for (let nextRowIdx = rowIdx + 1; nextRowIdx < rows.length; nextRowIdx++) {
+              const nextRow = rows[nextRowIdx];
+              const nextCells = nextRow.querySelectorAll("td, th");
+              
+              if (nextCells[colIdx]) {
+                const value = nextCells[colIdx].textContent.trim();
+                if (value !== "" && !value.toLowerCase().includes("nature")) {
+                  console.log(`📐 [Nature] ✅ Trouvée en vertical (ligne ${nextRowIdx}): "${value}"`);
+                  return value;
+                }
+              }
+            }
+            
+            // CAS 3: Si pas de valeur en dessous, chercher dans la cellule adjacente (même ligne, colonne suivante)
+            // Cela gère le cas où l'en-tête est mal rendu et devient une colonne
+            if (colIdx + 1 < cells.length) {
+              const adjacentCell = cells[colIdx + 1];
+              if (adjacentCell && adjacentCell.textContent.trim() !== "") {
+                const value = adjacentCell.textContent.trim();
+                if (!value.toLowerCase().includes("nature")) {
+                  console.log(`📐 [Nature] ✅ Trouvée en colonne adjacente (ligne ${rowIdx}, colonne ${colIdx + 1}): "${value}"`);
+                  return value;
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      console.log("📐 [Nature] ❌ Aucune nature de test trouvée");
+      return null;
+    }
+
+    /**
+     * Obtenir les en-têtes d'une table
+     */
+    getTableHeadersDirect(table) {
+      const headerSelectors = [
+        "thead th",
+        "thead td",
+        "tr:first-child th",
+        "tr:first-child td",
+      ];
+
+      for (const selector of headerSelectors) {
+        const headers = table.querySelectorAll(selector);
+        if (headers.length > 0) {
+          return Array.from(headers).map((cell) => cell.textContent.trim());
+        }
+      }
+
+      return [];
+    }
+
+    /**
+     * Vérifier si une table est modelisée (contient Conclusion, Assertion, CTR ou Ecart)
+     */
+    isModelizedTableDirect(table) {
+      const headers = this.getTableHeadersDirect(table);
+      
+      // Chercher les colonnes spécifiques avec des patterns flexibles
+      return headers.some(header => {
+        const h = header.toLowerCase().trim();
+        
+        // Conclusion
+        if (h === "conclusion") return true;
+        
+        // Assertion
+        if (h === "assertion") return true;
+        
+        // CTR (avec ou sans numéro)
+        if (/^ctr\d*$/i.test(h)) return true;
+        
+        // Ecart (avec ou sans accent, peut contenir "montant")
+        if (h.includes("ecart") || h.includes("écart") || h.includes("montant")) return true;
+        
+        return false;
+      });
+    }
+
+    /**
+     * Trouver un schéma de calcul existant pour une table
+     */
+    findExistingSchemaCalculDirect(table) {
+      const tableId = table.dataset.tableId || this.generateTableIdDirect(table);
+      
+      // Chercher le schéma juste avant la table
+      let previousElement = table.previousElementSibling;
+      
+      while (previousElement) {
+        if (
+          previousElement.tagName === "TABLE" &&
+          previousElement.classList.contains("claraverse-schema-calcul") &&
+          previousElement.dataset.forTable === tableId
+        ) {
+          return previousElement;
+        }
+        
+        // Ne chercher que dans les éléments immédiatement avant
+        if (previousElement.tagName === "TABLE") {
+          break;
+        }
+        
+        previousElement = previousElement.previousElementSibling;
+      }
+      
+      return null;
+    }
+
+    /**
+     * Créer la table du schéma de calcul
+     */
+    createSchemaCalculTableDirect(tablePrincipale, natureDeTest) {
+      console.log(`📐 [Schéma Calcul] Création pour: ${natureDeTest}`);
+
+      // Déterminer le modèle
+      const modele = this.determinerModeleSchemaCalculDirect(natureDeTest);
+      
+      if (!modele) {
+        throw new Error(`Aucun modèle trouvé pour la nature de test: ${natureDeTest}`);
+      }
+
+      console.log(`📐 [Schéma Calcul] Modèle: ${modele.type}, ${modele.colonnes.length} colonne(s)`);
+
+      // Créer la table
+      const schemaTable = document.createElement("table");
+      schemaTable.className = "min-w-full border border-gray-200 dark:border-gray-700 rounded-lg claraverse-schema-calcul";
+      schemaTable.style.cssText = `
+        margin-bottom: 1rem;
+        border-collapse: separate;
+        border-spacing: 0;
+        background: #fffbf0;
+      `;
+
+      // Générer les IDs
+      const tableId = tablePrincipale.dataset.tableId || this.generateTableIdDirect(tablePrincipale);
+      const schemaId = `schema_${tableId}_${Date.now()}`;
+      
+      schemaTable.dataset.schemaId = schemaId;
+      schemaTable.dataset.forTable = tableId;
+
+      // Créer le caption
+      // Pas de caption - le schéma parle de lui-même
+
+      // Créer le tbody
+      const tbody = document.createElement("tbody");
+      const row = document.createElement("tr");
+
+      modele.colonnes.forEach((colonne) => {
+        const td = document.createElement("td");
+        td.className = "px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700";
+        td.style.cssText = `
+          background: #fff9e6;
+          font-weight: 500;
+          text-align: center;
+          min-width: 80px;
+          cursor: text;
+        `;
+        td.textContent = colonne;
+        td.contentEditable = "true";
+        
+        // Événements pour l'édition
+        td.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            td.blur();
+          }
+        });
+        
+        row.appendChild(td);
+      });
+
+      tbody.appendChild(row);
+      schemaTable.appendChild(tbody);
+
+      // Insérer au-dessus de la table principale
+      tablePrincipale.parentNode.insertBefore(schemaTable, tablePrincipale);
+
+      console.log(`📐 [Schéma Calcul] ✅ Table créée avec ID: ${schemaId}`);
+    }
+
+    /**
+     * Déterminer le modèle de schéma selon la nature de test
+     */
+    determinerModeleSchemaCalculDirect(natureDeTest) {
+      const nature = natureDeTest.toLowerCase();
+
+      // Validation
+      if (nature.includes("validation")) {
+        return {
+          type: "Validation",
+          colonnes: ["(A)", "(B)", "(C) = (A) + (B)", "(D)", "(E) = (C) - (D)"],
+        };
+      }
+
+      // Mouvement
+      if (nature.includes("mouvement")) {
+        return {
+          type: "Mouvement",
+          colonnes: ["(A)", "(B)", "(C)", "(D) = (A) + (B) - (C)", "(E)", "(F) = (D) - (E)"],
+        };
+      }
+
+      // Rapprochement
+      if (nature.includes("rapprochement")) {
+        return {
+          type: "Rapprochement",
+          colonnes: ["(A)", "(B)", "(C) = (A) - (B)"],
+        };
+      }
+
+      // Séparation
+      if (nature.includes("separation") || nature.includes("séparation")) {
+        return {
+          type: "Séparation",
+          colonnes: ["(A)", "(B)", "(C) = (A) - (B)"],
+        };
+      }
+
+      // Estimation
+      if (nature.includes("estimation")) {
+        return {
+          type: "Estimation",
+          colonnes: ["(A)", "(B)", "(C) = (A) * (B)", "(D)", "(E) = (C) - (D)"],
+        };
+      }
+
+      // Revue analytique
+      if (nature.includes("revue") && nature.includes("analytique")) {
+        return {
+          type: "Revue analytique",
+          colonnes: ["(A)", "(B)", "(C) = (A) - (B)"],
+        };
+      }
+
+      // Cadrage TVA
+      if (nature.includes("cadrage") && nature.includes("tva")) {
+        return {
+          type: "Cadrage TVA",
+          colonnes: ["(A)", "(B) = (A) * 18%", "(C)", "(D)", "(E)", "(F) = (B) - (C) - (D) - (E)"],
+        };
+      }
+
+      // Cotisations sociales
+      if (nature.includes("cotisation") && nature.includes("sociale")) {
+        return {
+          type: "Cotisations sociales",
+          colonnes: ["(A)", "(B)", "(C)", "(D)"],
+        };
+      }
+
+      // Vierge
+      if (nature.includes("vierge")) {
+        return {
+          type: "Vierge",
+          colonnes: [],
+        };
+      }
+
+      // Modélisation (détection par expressions régulières)
+      if (nature.includes("modelisation") || nature.includes("modélisation")) {
+        const variables = this.extractVariablesFromNatureDirect(natureDeTest);
+        return {
+          type: "Modélisation",
+          colonnes: variables.length > 0 ? variables : ["(X)", "(Y)", "(Z)"],
+        };
+      }
+
+      // Par défaut, essayer de détecter un pattern
+      const variables = this.extractVariablesFromNatureDirect(natureDeTest);
+      if (variables.length > 0) {
+        return {
+          type: "Modélisation (auto-détecté)",
+          colonnes: variables,
+        };
+      }
+
+      return null;
+    }
+
+    /**
+     * Extraire les variables d'une formule de modélisation
+     */
+    extractVariablesFromNatureDirect(natureDeTest) {
+      const variablePattern = /\([A-Z]\)/g;
+      const matches = natureDeTest.match(variablePattern);
+      
+      if (!matches) return [];
+
+      return [...new Set(matches)];
+    }
+
+    /**
+     * Générer un ID pour une table
+     */
+    generateTableIdDirect(table) {
+      if (table.dataset.tableId) {
+        return table.dataset.tableId;
+      }
+
+      const headers = this.getTableHeadersDirect(table);
+      const headerText = headers.join("__").replace(/\s+/g, "_");
+      const hash = this.hashCodeDirect(headerText);
+      const uniqueId = `table_${hash}`;
+      
+      table.dataset.tableId = uniqueId;
+      return uniqueId;
+    }
+
+    /**
+     * Fonction de hachage simple
+     */
+    hashCodeDirect(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = (hash << 5) - hash + char;
+        hash = hash & hash;
+      }
+      return Math.abs(hash).toString(36);
+    }
+
+    /**
+     * Actualiser le schéma de calcul de la table active
+     * Supprime et recrée le schéma
+     */
+    actualiserSchemaCalcul() {
+      console.log("🔄 [Schéma Calcul] Actualisation du schéma");
+      
+      if (!this.targetTable) {
+        this.showAlert("⚠️ Aucune table sélectionnée.");
+        return;
+      }
+
+      try {
+        // Supprimer le schéma existant
+        const existingSchema = this.findExistingSchemaCalculDirect(this.targetTable);
+        
+        if (!existingSchema) {
+          this.showAlert("⚠️ Aucun schéma de calcul trouvé pour cette table.\n\nUtilisez 'Ajouter Schéma de calcul' pour en créer un.");
+          return;
+        }
+
+        // Supprimer et recréer
+        existingSchema.remove();
+        console.log("🗑️ [Schéma Calcul] Schéma existant supprimé");
+        
+        // Recréer
+        this.ajouterSchemaCalcul();
+        
+      } catch (error) {
+        console.error("❌ [Schéma Calcul] Erreur:", error);
+        this.showAlert(`❌ Erreur lors de l'actualisation:\n\n${error.message}`);
+      }
+    }
+
+    /**
+     * Supprimer le schéma de calcul de la table active
+     */
+    supprimerSchemaCalcul() {
+      console.log("🗑️ [Schéma Calcul] Suppression du schéma");
+      
+      if (!this.targetTable) {
+        this.showAlert("⚠️ Aucune table sélectionnée.");
+        return;
+      }
+
+      try {
+        // Trouver le schéma associé
+        const schemaTable = this.findExistingSchemaCalculDirect(this.targetTable);
+        
+        if (!schemaTable) {
+          this.showAlert("⚠️ Aucun schéma de calcul trouvé pour cette table.");
+          console.warn("⚠️ [Schéma Calcul] Aucun schéma trouvé");
+          return;
+        }
+
+        if (confirm("Supprimer le schéma de calcul de cette table ?")) {
+          // Supprimer du DOM
+          schemaTable.remove();
+          
+          this.showQuickNotification("✅ Schéma de calcul supprimé");
+          console.log("✅ [Schéma Calcul] Schéma supprimé avec succès");
+        }
+        
+      } catch (error) {
+        console.error("❌ [Schéma Calcul] Erreur:", error);
+        this.showAlert(`❌ Erreur lors de la suppression:\n\n${error.message}`);
+      }
     }
 
     cleanup() {

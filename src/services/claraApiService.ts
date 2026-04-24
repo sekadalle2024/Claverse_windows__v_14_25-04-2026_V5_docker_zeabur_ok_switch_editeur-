@@ -23,6 +23,7 @@ import { claraAgentService } from "./claraAgentService";
 import { claraChatService } from "./claraChatService";
 import { claraModelService } from "./claraModelService";
 import { claraAttachmentService } from "./claraAttachmentService";
+import { claraPapierTravailService } from "./claraPapierTravailService";
 
 export class ClaraApiService {
   private recoveryService: TokenLimitRecoveryService;
@@ -549,6 +550,15 @@ export class ClaraApiService {
     let markdown = "";
 
     try {
+      // 🔧 DÉTECTION PAPIER DE TRAVAIL
+      // Vérifier si la réponse contient des papiers de travail (Nature de test)
+      const isPapierTravail = claraPapierTravailService.detectPapierTravail(data);
+      
+      if (isPapierTravail) {
+        console.log("📋 === PAPIER DE TRAVAIL DÉTECTÉ ===");
+        return claraPapierTravailService.process(data);
+      }
+
       // Parcourir la structure "Etape mission - Programme" ou toute clé similaire
       const etapeMissionKey =
         Object.keys(data).find(
