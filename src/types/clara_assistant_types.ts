@@ -199,6 +199,12 @@ export interface ClaraMessageMetadata {
 
   /** Execution ID for tracking tool executions */
   executionId?: string;
+
+  /** Case name from n8n router (e.g., "Case 1", "Case 44") */
+  caseName?: string;
+
+  /** Route key from n8n router (e.g., "default", "editeur") */
+  routeKey?: string;
 }
 
 // ================================

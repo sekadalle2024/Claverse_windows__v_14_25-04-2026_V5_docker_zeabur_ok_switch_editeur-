@@ -61,30 +61,10 @@ export class ClaraPapierTravailService {
         .clara-table th, .clara-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         .clara-table th { background-color: #f8f9fa; font-weight: 600; }
         .section-bar { background: #1855A3; color: #fff; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 6px 12px; margin-bottom: 0; border-radius: 4px 4px 0 0; }
-        /* ── Schéma de calcul row (inside thead of main test table) ── */
-        .schema-calcul-row td {
-          padding: 3px 6px;
-          font-weight: 700;
-          font-size: 0.82em;
-          text-align: center;
-          white-space: nowrap;
-          border: none;
-        }
-        .schema-calcul-row td.ltr  { background: #EFF6FF; color: #1855A3; border: 0.5px solid #94a3b8 !important; }
-        .schema-calcul-row td.ltr-e { background: #FFF7ED; color: #9a3412; border: 0.5px solid #94a3b8 !important; }
-        .schema-calcul-row td.nb   { background: transparent; border: none !important; }
-        /* ── Totalization & cross-ref rows ── */
-        .total-row { background-color: #dcfce7; font-weight: bold; color: #166534; }
-        .cross-ref-h-row td { color: #0056b3; font-style: italic; font-size: 0.85em; text-align: center; }
-        /* Visibility states */
-        .total-row.hidden       { display: none; }
-        .cross-ref-h-row.hidden { display: none; }
-        .col-x-ref-v.hidden     { display: none; }
         /* Interactive columns */
         .col-assertion, .col-conclusion, .col-ctr { cursor: pointer; background-color: #fdfdfe; }
         .col-assertion:hover, .col-conclusion:hover, .col-ctr:hover { background-color: #f0f7ff; }
         /* Misc */
-        .signature-table td:first-child { font-weight: bold; width: 30%; }
         .objectives-table td { background-color: #fff9db; }
         .legends-table { width: auto; min-width: 300px; }
         .test-table-container { overflow-x: auto; }
@@ -141,9 +121,17 @@ export class ClaraPapierTravailService {
     return `
       <div class="worksheet-section signature-worksheet">
         <div class="section-bar">Signature Worksheet</div>
-        <table class="clara-table signature-table" style="width: 400px;">
+        <table class="clara-table signature-table">
+          <thead>
+            <tr><th>Rubrique</th><th>Description</th></tr>
+          </thead>
           <tbody>
-            ${Object.entries(item).map(([key, value]) => `<tr><td class="lbl">${key}</td><td>${value}</td></tr>`).join('')}
+            ${Object.entries(item).map(([key, value]) => `
+              <tr>
+                <td><strong>${key.charAt(0).toUpperCase() + key.slice(1)}</strong></td>
+                <td>${value}</td>
+              </tr>
+            `).join('')}
           </tbody>
         </table>
       </div>
@@ -161,9 +149,17 @@ export class ClaraPapierTravailService {
     return `
       <div class="worksheet-section mission-info">
         <div class="section-bar">Feuille de couverture</div>
-        <table class="clara-table">
+        <table class="clara-table mission-info-table">
+          <thead>
+            <tr><th>Rubrique</th><th>Description</th></tr>
+          </thead>
           <tbody>
-            ${Object.entries(item).map(([k, v]) => `<tr><td class="lbl">${k}</td><td>${v}</td></tr>`).join('')}
+            ${Object.entries(item).map(([key, value]) => `
+              <tr>
+                <td><strong>${key.charAt(0).toUpperCase() + key.slice(1)}</strong></td>
+                <td>${value}</td>
+              </tr>
+            `).join('')}
           </tbody>
         </table>
       </div>
@@ -215,25 +211,15 @@ export class ClaraPapierTravailService {
     const table5 = this.findTable(data, ["table 5", "modelised table", "Modelized Table"]);
     if (!table5 || !Array.isArray(table5)) return "";
 
-    const nature = this.getNatureDeTest(data);
-    const schemaCalcul = this.findTable(data, ["table 4b", "schema de calcul", "Schéma de calcul"]);
-    const totalisationData = this.findTable(data, ["table 6", "totalisation", "Totalisation"]);
-    const crossRefHData = this.findTable(data, ["table 7", "cross references horizontale"]);
-
     // Main Table Headers
     const headers = Object.keys(table5[0]);
 
-    // Generate the schema row HTML (a single <tr> injected into <thead>)
-    // By placing it inside the same <table>, column widths align automatically.
-    const schemaRow = this.generateSchemaRow(nature, schemaCalcul, headers);
-
     return `
       <div class="worksheet-section test-section">
-        <div class="section-bar">Schéma de calcul</div>
+        <div class="section-bar">Tests</div>
         <div class="test-table-container">
           <table class="clara-table main-test-table" id="main-test-table">
             <thead>
-              ${schemaRow}
               <tr>
                 ${headers.map(h => `<th class="${this.getCellClass(h)}">${h}</th>`).join('')}
               </tr>
@@ -244,8 +230,6 @@ export class ClaraPapierTravailService {
                   ${headers.map(h => `<td class="${this.getCellClass(h)}" data-header="${h}">${row[h] || ''}</td>`).join('')}
                 </tr>
               `).join('')}
-              ${this.renderTotalizationRow(headers, totalisationData, table5)}
-              ${this.renderCrossRefHRow(headers, crossRefHData)}
             </tbody>
           </table>
         </div>
@@ -253,137 +237,6 @@ export class ClaraPapierTravailService {
     `;
   }
 
-  /**
-   * Generates a single schema <tr> row injected as the FIRST row of <thead>
-   * in the main test table. This guarantees perfect column alignment without
-   * any JavaScript width-sync or separate table tricks.
-   * Returns empty string if no schema applies.
-   */
-  private generateSchemaRow(nature: string, schemaData: any, headers: string[]): string {
-    let models: string[] = [];
-    const n = nature ? nature.toLowerCase() : "";
-
-    // ── Build models array based on "Nature de test" ──────────────────
-    if (n.includes("validation")) {
-      models = ["(A)", "(B)", "(C) = (A)+(B)"];
-    } else if (n.includes("mouvement")) {
-      models = ["(A)", "(B)", "(C)", "(D) = (A+B-C)", "(E)", "(F) = (D)-(E)"];
-    } else if (n.includes("rapprochement")) {
-      models = ["(A)", "(B)", "(C) = (A) - (B)"];
-    } else if (n.includes("separation")) {
-      models = ["(A)", "(B)", "(C) = (A) - (B)"];
-    } else if (n.includes("estimation")) {
-      models = ["A", "B", "C = A*B", "D", "E = C - D"];
-    } else if (n.includes("revue analytique")) {
-      models = ["(A)", "(B)", "(C) = (A) - (B)"];
-    } else if (n.includes("cadrage tva")) {
-      models = ["(A)", "(B) = (A)*18%", "(C)", "(D)", "(E)", "(F) = (B) - (C) - (D) - (E)"];
-    } else if (n.includes("cotisations sociales")) {
-      // User left it empty in prompt, fallback will handle if rawSchema exists, but let's provide a generic default if empty
-      models = ["(A)", "(B)", "(C) = (A) - (B)"];
-    } else if (n !== "") {
-      // REGEX FALLBACK — Modelisation variable or unknown nature:
-      // Extract groups like (X), (Z) = (X) - (Y), (Z) = (T) + (X) - (Y)
-      const rawSchema = schemaData
-        ? (Array.isArray(schemaData)
-            ? (schemaData[0]["Sch\u00e9ma de calcul"] || schemaData[0][Object.keys(schemaData[0])[0]])
-            : (schemaData["Sch\u00e9ma de calcul"] || Object.values(schemaData)[0]))
-        : "";
-      
-      let rawStr = String(rawSchema).trim();
-      if (rawStr) {
-        // If explicit separators are used
-        if (rawStr.includes(';') || rawStr.includes('|')) {
-          models = rawStr.split(/\s*[;|]\s*/).map((s: string) => s.trim()).filter(Boolean);
-        } else {
-          // Advanced regex to extract variables and their formulas
-          // Matches: (Letter) followed by text, optionally followed by '=' and its formula, until the next variable starts
-          const rx = /(?:\([A-Z]\)[^=;()]*?(?:=[^;]*)?(?=\s*\([A-Z]\)[^=;()]*?(?:=|$)|$))/g;
-          const found = rawStr.match(rx);
-          models = found ? found.map((s: string) => s.trim()) : [rawStr];
-        }
-      }
-    }
-
-    if (models.length === 0) return "";
-
-    // ── Anchor: the FIRST "Ecart" column (regex, case-insensitive) ────
-    // The last model label sits AT the Ecart column (that column IS the
-    // computed value in the JSON response, e.g. C = A - B).
-    const ecartIndex = headers.findIndex(h => /^[e\u00e9]cart/i.test(h.trim()));
-    const anchorIndex = ecartIndex !== -1 ? ecartIndex : headers.length - 1;
-
-    // Fill row cells right-to-left ending at anchorIndex
-    const rowCells: string[] = new Array(headers.length).fill("");
-    for (let i = 0; i < models.length; i++) {
-      const targetIndex = anchorIndex - (models.length - 1 - i);
-      if (targetIndex >= 0 && targetIndex < headers.length) {
-        rowCells[targetIndex] = models[i].trim();
-      }
-    }
-
-    // ── Render as a <tr class="schema-calcul-row"> inside <thead> ─────
-    // CSS class ltr   = blue  (formula variables A, B, C…)
-    // CSS class ltr-e = orange (the Ecart / result formula cell)
-    // CSS class nb    = transparent (empty cells)
-    const cells = rowCells.map((cell, idx) => {
-      let cls = 'nb';
-      if (cell) {
-        // The cell at anchorIndex is the Ecart result → orange
-        cls = (idx === anchorIndex) ? 'ltr-e' : 'ltr';
-      }
-      return `<td class="${cls}">${cell}</td>`;
-    }).join('');
-
-    return `<tr class="schema-calcul-row">${cells}</tr>`;
-  }
-
-  private renderTotalizationRow(headers: string[], totalisationData: any, table5: any[]): string {
-    // If we have explicit totalization data from JSON, use it
-    if (totalisationData) {
-      const totalRow = Array.isArray(totalisationData) ? totalisationData[0] : totalisationData;
-      return `
-        <tr class="total-row">
-          ${headers.map(h => `<td>${totalRow[h] || ''}</td>`).join('')}
-        </tr>
-      `;
-    }
-
-    // Otherwise, perform automatic totalization for monetary columns
-    const totals: { [key: string]: number } = {};
-    headers.forEach(h => {
-      if (this.isMonetaryHeader(h)) {
-        totals[h] = table5.reduce((sum, row) => {
-          const val = parseFloat(String(row[h] || "0").replace(/\s/g, '').replace(',', '.'));
-          return sum + (isNaN(val) ? 0 : val);
-        }, 0);
-      }
-    });
-
-    return `
-      <tr class="total-row">
-        ${headers.map(h => {
-          if (h.toLowerCase().includes("no") || h.toLowerCase().includes("n°")) return '<td>Total</td>';
-          if (totals[h] !== undefined) return `<td>${totals[h].toLocaleString('fr-FR')}</td>`;
-          return '<td></td>';
-        }).join('')}
-      </tr>
-    `;
-  }
-
-  private renderCrossRefHRow(headers: string[], crossRefData: any): string {
-    if (!crossRefData) return "";
-    const items = Array.isArray(crossRefData) ? crossRefData : [crossRefData];
-    
-    return items.map(item => `
-      <tr class="cross-ref-h-row">
-        ${headers.map(h => {
-          const val = item[h] || "";
-          return `<td>${val ? `<span class="cross">${val}</span>` : ""}</td>`;
-        }).join('')}
-      </tr>
-    `).join('');
-  }
 
   private getObjectivesText(data: any): string {
     const table2 = this.findTable(data, ["table 2", "objectifs"]);

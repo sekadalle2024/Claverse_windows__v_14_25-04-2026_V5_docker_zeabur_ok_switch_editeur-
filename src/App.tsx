@@ -16,7 +16,7 @@ import AgentRunnerSDK from "./components/AgentRunnerSDK";
 import Lumaui from "./components/Lumaui";
 import LumaUILite from "./components/LumaUILite";
 import Notebooks from "./components/Notebooks";
-import { db } from "./db";
+import { db } from "./db/index";
 import { ProvidersProvider } from "./contexts/ProvidersContext";
 import ClaraAssistant from "./components/ClaraAssistant";
 import { StartupService } from "./services/startupService";
