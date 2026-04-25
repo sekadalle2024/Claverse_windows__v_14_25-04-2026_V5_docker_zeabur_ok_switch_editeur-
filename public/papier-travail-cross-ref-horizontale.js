@@ -342,6 +342,50 @@
     }
 
     /**
+     * Trouver l'index de la colonne "Ecart" dans une table
+     */
+    findEcartColumnIndex(table) {
+      const headers = this.getTableHeaders(table);
+      
+      for (let i = 0; i < headers.length; i++) {
+        const h = headers[i].toLowerCase().trim();
+        if (h.includes("ecart") || h.includes("écart") || h.includes("montant")) {
+          debug.log(`📎 [Alignement] Colonne "Ecart" trouvée à l'index ${i}`);
+          return i;
+        }
+      }
+      
+      debug.warn("📎 [Alignement] Colonne 'Ecart' non trouvée");
+      return -1;
+    }
+
+    /**
+     * Calculer le nombre de colonnes vides à ajouter avant les références
+     */
+    calculateEmptyColumnsCount(tablePrincipale, nbColonnes) {
+      const totalColumns = this.getTableHeaders(tablePrincipale).length;
+      const ecartIndex = this.findEcartColumnIndex(tablePrincipale);
+      
+      debug.log(`📎 [Alignement] Total colonnes table: ${totalColumns}`);
+      debug.log(`📎 [Alignement] Index colonne Ecart: ${ecartIndex}`);
+      debug.log(`📎 [Alignement] Nombre de références: ${nbColonnes}`);
+      
+      if (ecartIndex === -1) {
+        // Pas de colonne Ecart, aligner à droite
+        const emptyColumns = totalColumns - nbColonnes;
+        debug.log(`📎 [Alignement] Pas d'Ecart, alignement à droite: ${emptyColumns} colonnes vides`);
+        return Math.max(0, emptyColumns);
+      }
+      
+      // Aligner pour que la dernière référence soit sur la colonne Ecart
+      const emptyColumns = ecartIndex - nbColonnes + 1;
+      
+      debug.log(`📎 [Alignement] Formule: ${ecartIndex} - ${nbColonnes} + 1 = ${emptyColumns}`);
+      
+      return Math.max(0, emptyColumns);
+    }
+
+    /**
      * Créer la cross référence horizontale selon la nature de test
      */
     createCrossRefHorizontale(tablePrincipale, natureDeTest, parentDiv) {
@@ -362,16 +406,20 @@
         return;
       }
 
-      // Créer la table de cross référence
-      const crossRefTable = this.buildCrossRefTable(modele, natureDeTest);
+      // Créer la table de cross référence avec alignement
+      const crossRefTable = this.buildCrossRefTable(modele, natureDeTest, tablePrincipale);
       
       // Générer un ID unique
       const crossRefId = this.generateCrossRefId(tablePrincipale);
       crossRefTable.dataset.crossRefId = crossRefId;
       crossRefTable.dataset.forTable = tablePrincipale.dataset.tableId || this.generateTableId(tablePrincipale);
 
-      // Insérer au-dessus de la table principale
-      tablePrincipale.parentNode.insertBefore(crossRefTable, tablePrincipale);
+      // Insérer EN DESSOUS de la table principale
+      if (tablePrincipale.nextSibling) {
+        tablePrincipale.parentNode.insertBefore(crossRefTable, tablePrincipale.nextSibling);
+      } else {
+        tablePrincipale.parentNode.appendChild(crossRefTable);
+      }
 
       // Rendre les cellules éditables
       this.makeCrossRefEditable(crossRefTable);
@@ -499,7 +547,7 @@
     /**
      * Construire la table HTML de cross référence horizontale
      */
-    buildCrossRefTable(modele, natureDeTest) {
+    buildCrossRefTable(modele, natureDeTest, tablePrincipale) {
       const table = document.createElement("table");
       table.className = "min-w-full border border-gray-200 dark:border-gray-700 rounded-lg claraverse-cross-ref-horizontale";
       table.style.cssText = `
@@ -509,13 +557,32 @@
         background: #f0f9ff;
       `;
 
+      // Calculer l'alignement
+      const totalColumns = this.getTableHeaders(tablePrincipale).length;
+      const emptyColumnsCount = this.calculateEmptyColumnsCount(tablePrincipale, modele.nbColonnes);
+      
+      debug.log(`📎 [Build] Total colonnes: ${totalColumns}`);
+      debug.log(`📎 [Build] Colonnes vides avant: ${emptyColumnsCount}`);
+
       // Créer le tbody
       const tbody = document.createElement("tbody");
 
       // Ligne unique avec les colonnes
       const row = document.createElement("tr");
 
-      // Créer les cellules selon le nombre de colonnes
+      // Ajouter les colonnes vides AVANT les références
+      for (let i = 0; i < emptyColumnsCount; i++) {
+        const td = document.createElement("td");
+        td.className = "px-4 py-3 border border-gray-200 dark:border-gray-700";
+        td.style.cssText = `
+          background: #f0f9ff;
+          min-width: 80px;
+        `;
+        td.textContent = "";
+        row.appendChild(td);
+      }
+
+      // Créer les cellules de référence selon le nombre de colonnes
       for (let i = 0; i < modele.nbColonnes; i++) {
         const td = document.createElement("td");
         td.className = "px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700";
@@ -528,6 +595,21 @@
         // Placeholder pour la cross référence
         td.textContent = `[  ]`;
         td.contentEditable = "true";
+        row.appendChild(td);
+      }
+
+      // Compléter avec des colonnes vides APRÈS les références si nécessaire
+      const remainingColumns = totalColumns - emptyColumnsCount - modele.nbColonnes;
+      debug.log(`📎 [Build] Colonnes vides après: ${remainingColumns}`);
+      
+      for (let i = 0; i < remainingColumns; i++) {
+        const td = document.createElement("td");
+        td.className = "px-4 py-3 border border-gray-200 dark:border-gray-700";
+        td.style.cssText = `
+          background: #f0f9ff;
+          min-width: 80px;
+        `;
+        td.textContent = "";
         row.appendChild(td);
       }
 

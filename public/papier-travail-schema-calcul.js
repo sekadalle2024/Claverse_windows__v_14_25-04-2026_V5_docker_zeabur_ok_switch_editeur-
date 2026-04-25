@@ -389,6 +389,51 @@
     }
 
     /**
+     * Trouver l'index de la colonne "Ecart" dans une table
+     */
+    findEcartColumnIndex(table) {
+      const headers = this.getTableHeaders(table);
+      
+      for (let i = 0; i < headers.length; i++) {
+        const h = headers[i].toLowerCase().trim();
+        if (h.includes("ecart") || h.includes("écart") || h.includes("montant")) {
+          debug.log(`📐 [Alignement] Colonne "Ecart" trouvée à l'index ${i}`);
+          return i;
+        }
+      }
+      
+      debug.warn("📐 [Alignement] Colonne 'Ecart' non trouvée");
+      return -1;
+    }
+
+    /**
+     * Calculer le nombre de colonnes vides à ajouter avant les variables
+     */
+    calculateEmptyColumnsCount(tablePrincipale, modele) {
+      const totalColumns = this.getTableHeaders(tablePrincipale).length;
+      const ecartIndex = this.findEcartColumnIndex(tablePrincipale);
+      
+      debug.log(`📐 [Alignement] Total colonnes table: ${totalColumns}`);
+      debug.log(`📐 [Alignement] Index colonne Ecart: ${ecartIndex}`);
+      debug.log(`📐 [Alignement] Nombre de variables: ${modele.colonnes.length}`);
+      
+      if (ecartIndex === -1) {
+        // Pas de colonne Ecart, aligner à droite
+        const emptyColumns = totalColumns - modele.colonnes.length;
+        debug.log(`📐 [Alignement] Pas d'Ecart, alignement à droite: ${emptyColumns} colonnes vides`);
+        return Math.max(0, emptyColumns);
+      }
+      
+      // Aligner pour que la dernière variable soit sur la colonne Ecart
+      const variablesCount = modele.colonnes.length;
+      const emptyColumns = ecartIndex - variablesCount + 1;
+      
+      debug.log(`📐 [Alignement] Formule: ${ecartIndex} - ${variablesCount} + 1 = ${emptyColumns}`);
+      
+      return Math.max(0, emptyColumns);
+    }
+
+    /**
      * Créer le schéma de calcul selon la nature de test
      */
     createSchemaCalcul(tablePrincipale, natureDeTest, parentDiv) {
@@ -409,8 +454,8 @@
         return;
       }
 
-      // Créer la table du schéma
-      const schemaTable = this.buildSchemaTable(modele, natureDeTest);
+      // Créer la table du schéma avec alignement
+      const schemaTable = this.buildSchemaTable(modele, natureDeTest, tablePrincipale);
       
       // Générer un ID unique pour le schéma
       const schemaId = this.generateSchemaId(tablePrincipale);
@@ -550,7 +595,7 @@
     /**
      * Construire la table HTML du schéma de calcul
      */
-    buildSchemaTable(modele, natureDeTest) {
+    buildSchemaTable(modele, natureDeTest, tablePrincipale) {
       const table = document.createElement("table");
       table.className = "min-w-full border border-gray-200 dark:border-gray-700 rounded-lg claraverse-schema-calcul";
       table.style.cssText = `
@@ -560,12 +605,32 @@
         background: #fffbf0;
       `;
 
+      // Calculer l'alignement
+      const totalColumns = this.getTableHeaders(tablePrincipale).length;
+      const emptyColumnsCount = this.calculateEmptyColumnsCount(tablePrincipale, modele);
+      
+      debug.log(`📐 [Build] Total colonnes: ${totalColumns}`);
+      debug.log(`📐 [Build] Colonnes vides avant: ${emptyColumnsCount}`);
+
       // Créer le tbody (pas d'en-tête pour le schéma de calcul)
       const tbody = document.createElement("tbody");
 
       // Ligne unique avec les colonnes
       const row = document.createElement("tr");
 
+      // Ajouter les colonnes vides AVANT les variables
+      for (let i = 0; i < emptyColumnsCount; i++) {
+        const td = document.createElement("td");
+        td.className = "px-4 py-3 border border-gray-200 dark:border-gray-700";
+        td.style.cssText = `
+          background: #fffbf0;
+          min-width: 80px;
+        `;
+        td.textContent = "";
+        row.appendChild(td);
+      }
+
+      // Ajouter les colonnes du modèle (variables)
       modele.colonnes.forEach((colonne, index) => {
         const td = document.createElement("td");
         td.className = "px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700";
@@ -580,10 +645,23 @@
         row.appendChild(td);
       });
 
+      // Compléter avec des colonnes vides APRÈS les variables si nécessaire
+      const remainingColumns = totalColumns - emptyColumnsCount - modele.colonnes.length;
+      debug.log(`📐 [Build] Colonnes vides après: ${remainingColumns}`);
+      
+      for (let i = 0; i < remainingColumns; i++) {
+        const td = document.createElement("td");
+        td.className = "px-4 py-3 border border-gray-200 dark:border-gray-700";
+        td.style.cssText = `
+          background: #fffbf0;
+          min-width: 80px;
+        `;
+        td.textContent = "";
+        row.appendChild(td);
+      }
+
       tbody.appendChild(row);
       table.appendChild(tbody);
-
-      // Pas de caption - le schéma parle de lui-même
 
       return table;
     }

@@ -10380,6 +10380,57 @@
     }
 
     /**
+     * Trouver l'index de la colonne "Ecart" dans une table
+     * @param {HTMLTableElement} table - La table à analyser
+     * @returns {number} L'index de la colonne Ecart, ou -1 si non trouvée
+     */
+    findEcartColumnIndex(table) {
+      const headers = this.getTableHeadersDirect(table);
+      
+      console.log(`📐 [Ecart] Recherche de la colonne Ecart dans ${headers.length} colonnes`);
+      
+      for (let i = 0; i < headers.length; i++) {
+        const h = headers[i].toLowerCase().trim();
+        if (h.includes("ecart") || h.includes("écart") || h.includes("montant")) {
+          console.log(`📐 [Ecart] ✅ Colonne Ecart trouvée à l'index ${i}: "${headers[i]}"`);
+          return i;
+        }
+      }
+      
+      console.log("📐 [Ecart] ❌ Aucune colonne Ecart trouvée");
+      return -1;
+    }
+
+    /**
+     * Calculer le nombre de colonnes vides à ajouter avant les variables
+     * pour aligner la dernière variable sur la colonne Ecart
+     * @param {HTMLTableElement} tablePrincipale - La table principale
+     * @param {Object} modele - Le modèle de schéma avec ses colonnes
+     * @returns {number} Le nombre de colonnes vides à ajouter
+     */
+    calculateEmptyColumnsCount(tablePrincipale, modele) {
+      const totalColumns = this.getTableHeadersDirect(tablePrincipale).length;
+      const ecartIndex = this.findEcartColumnIndex(tablePrincipale);
+      
+      console.log(`📐 [Alignement] Total colonnes table: ${totalColumns}`);
+      console.log(`📐 [Alignement] Index colonne Ecart: ${ecartIndex}`);
+      console.log(`📐 [Alignement] Nombre de variables: ${modele.colonnes.length}`);
+      
+      if (ecartIndex === -1) {
+        // Pas de colonne Ecart, aligner à droite
+        const emptyColumns = totalColumns - modele.colonnes.length;
+        console.log(`📐 [Alignement] Pas d'Ecart, alignement à droite: ${emptyColumns} colonnes vides`);
+        return Math.max(0, emptyColumns);
+      }
+      
+      // Aligner pour que la dernière variable soit sur la colonne Ecart
+      const emptyColumns = ecartIndex - modele.colonnes.length + 1;
+      console.log(`📐 [Alignement] Alignement sur Ecart: ${emptyColumns} colonnes vides`);
+      
+      return Math.max(0, emptyColumns);
+    }
+
+    /**
      * Trouver un schéma de calcul existant pour une table
      */
     findExistingSchemaCalculDirect(table) {
@@ -10423,6 +10474,13 @@
 
       console.log(`📐 [Schéma Calcul] Modèle: ${modele.type}, ${modele.colonnes.length} colonne(s)`);
 
+      // Calculer l'alignement
+      const totalColumns = this.getTableHeadersDirect(tablePrincipale).length;
+      const emptyColumnsCount = this.calculateEmptyColumnsCount(tablePrincipale, modele);
+      
+      console.log(`📐 [Schéma Calcul] Table principale: ${totalColumns} colonnes`);
+      console.log(`📐 [Schéma Calcul] Colonnes vides avant variables: ${emptyColumnsCount}`);
+
       // Créer la table
       const schemaTable = document.createElement("table");
       schemaTable.className = "min-w-full border border-gray-200 dark:border-gray-700 rounded-lg claraverse-schema-calcul";
@@ -10440,13 +10498,23 @@
       schemaTable.dataset.schemaId = schemaId;
       schemaTable.dataset.forTable = tableId;
 
-      // Créer le caption
-      // Pas de caption - le schéma parle de lui-même
-
       // Créer le tbody
       const tbody = document.createElement("tbody");
       const row = document.createElement("tr");
 
+      // Ajouter les colonnes vides AVANT les variables
+      for (let i = 0; i < emptyColumnsCount; i++) {
+        const td = document.createElement("td");
+        td.className = "px-4 py-3 border border-gray-200 dark:border-gray-700";
+        td.style.cssText = `
+          background: #fffbf0;
+          min-width: 80px;
+        `;
+        td.textContent = "";
+        row.appendChild(td);
+      }
+
+      // Ajouter les colonnes du modèle (variables)
       modele.colonnes.forEach((colonne) => {
         const td = document.createElement("td");
         td.className = "px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700";
@@ -10471,6 +10539,21 @@
         row.appendChild(td);
       });
 
+      // Compléter avec des colonnes vides APRÈS les variables si nécessaire
+      const remainingColumns = totalColumns - emptyColumnsCount - modele.colonnes.length;
+      console.log(`📐 [Schéma Calcul] Colonnes vides après variables: ${remainingColumns}`);
+      
+      for (let i = 0; i < remainingColumns; i++) {
+        const td = document.createElement("td");
+        td.className = "px-4 py-3 border border-gray-200 dark:border-gray-700";
+        td.style.cssText = `
+          background: #fffbf0;
+          min-width: 80px;
+        `;
+        td.textContent = "";
+        row.appendChild(td);
+      }
+
       tbody.appendChild(row);
       schemaTable.appendChild(tbody);
 
@@ -10478,6 +10561,7 @@
       tablePrincipale.parentNode.insertBefore(schemaTable, tablePrincipale);
 
       console.log(`📐 [Schéma Calcul] ✅ Table créée avec ID: ${schemaId}`);
+      console.log(`📐 [Schéma Calcul] ✅ Alignement: ${emptyColumnsCount} vides + ${modele.colonnes.length} variables + ${remainingColumns} vides = ${totalColumns} colonnes`);
     }
 
     /**
@@ -10784,12 +10868,28 @@
      * Créer la table de cross référence
      */
     createCrossRefTableDirect(tablePrincipale, natureDeTest) {
+      console.log(`📎 [Cross Ref] Création pour: ${natureDeTest}`);
+      
       // Déterminer le modèle
       const modele = this.determinerModeleCrossRef(natureDeTest);
       
       if (!modele) {
         throw new Error(`Aucun modèle trouvé pour: ${natureDeTest}`);
       }
+
+      console.log(`📎 [Cross Ref] Modèle: ${modele.type}, ${modele.nbColonnes} colonne(s)`);
+
+      // Calculer l'alignement (même logique que pour le schéma de calcul)
+      const totalColumns = this.getTableHeadersDirect(tablePrincipale).length;
+      
+      // Créer un modèle temporaire avec les colonnes pour utiliser calculateEmptyColumnsCount
+      const tempModele = {
+        colonnes: Array(modele.nbColonnes).fill("[  ]")
+      };
+      const emptyColumnsCount = this.calculateEmptyColumnsCount(tablePrincipale, tempModele);
+      
+      console.log(`📎 [Cross Ref] Table principale: ${totalColumns} colonnes`);
+      console.log(`📎 [Cross Ref] Colonnes vides avant références: ${emptyColumnsCount}`);
 
       // Créer la table
       const crossRefTable = document.createElement("table");
@@ -10813,7 +10913,19 @@
       const tbody = document.createElement("tbody");
       const row = document.createElement("tr");
 
-      // Créer les cellules
+      // Ajouter les colonnes vides AVANT les références
+      for (let i = 0; i < emptyColumnsCount; i++) {
+        const td = document.createElement("td");
+        td.className = "px-4 py-3 border border-gray-200 dark:border-gray-700";
+        td.style.cssText = `
+          background: #f0f9ff;
+          min-width: 80px;
+        `;
+        td.textContent = "";
+        row.appendChild(td);
+      }
+
+      // Ajouter les cellules de référence
       for (let i = 0; i < modele.nbColonnes; i++) {
         const td = document.createElement("td");
         td.className = "px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700";
@@ -10822,19 +10934,49 @@
           font-weight: 500;
           text-align: center;
           min-width: 80px;
+          cursor: text;
         `;
         td.textContent = `[  ]`;
         td.contentEditable = "true";
+        
+        // Événements pour l'édition
+        td.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            td.blur();
+          }
+        });
+        
+        row.appendChild(td);
+      }
+
+      // Compléter avec des colonnes vides APRÈS les références si nécessaire
+      const remainingColumns = totalColumns - emptyColumnsCount - modele.nbColonnes;
+      console.log(`📎 [Cross Ref] Colonnes vides après références: ${remainingColumns}`);
+      
+      for (let i = 0; i < remainingColumns; i++) {
+        const td = document.createElement("td");
+        td.className = "px-4 py-3 border border-gray-200 dark:border-gray-700";
+        td.style.cssText = `
+          background: #f0f9ff;
+          min-width: 80px;
+        `;
+        td.textContent = "";
         row.appendChild(td);
       }
 
       tbody.appendChild(row);
       crossRefTable.appendChild(tbody);
 
-      // Insérer au-dessus de la table principale
-      tablePrincipale.parentNode.insertBefore(crossRefTable, tablePrincipale);
+      // Insérer EN DESSOUS de la table principale
+      if (tablePrincipale.nextSibling) {
+        tablePrincipale.parentNode.insertBefore(crossRefTable, tablePrincipale.nextSibling);
+      } else {
+        tablePrincipale.parentNode.appendChild(crossRefTable);
+      }
 
-      console.log(`✅ [Cross Ref] Table créée avec ${modele.nbColonnes} colonnes`);
+      console.log(`📎 [Cross Ref] ✅ Table créée avec ID: ${crossRefId}`);
+      console.log(`📎 [Cross Ref] ✅ Alignement: ${emptyColumnsCount} vides + ${modele.nbColonnes} références + ${remainingColumns} vides = ${totalColumns} colonnes`);
     }
 
     /**
