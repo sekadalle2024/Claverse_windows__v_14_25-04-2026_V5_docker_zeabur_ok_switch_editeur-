@@ -10,6 +10,10 @@ export class ClaraPapierTravailService {
    * Detects if the data is a "Papier de travail" (audit workpaper)
    */
   public detectPapierTravail(data: any): boolean {
+    if (typeof data === 'string' && data.toLowerCase().includes("nature de test")) {
+      return true;
+    }
+    
     if (!data) return false;
 
     const natureKeywords = ["nature de test", "nature_de_test", "nature de Test"];
@@ -51,9 +55,97 @@ export class ClaraPapierTravailService {
   }
 
   /**
+   * Parses a markdown string into the JSON format expected by this service
+   */
+  public parseMarkdownToJSON(markdown: string): any {
+    const sections = markdown.split(/(?:\r?\n){2,}/);
+    const result: any = { "Etape mission - Feuille couverture": [] };
+    
+    let tableIndex = 0;
+    
+    sections.forEach((section) => {
+      const lines = section.trim().split(/\r?\n/).map(l => l.trim()).filter(l => l.startsWith('|'));
+      if (lines.length < 3) return; // Pas une table markdown valide
+      
+      // Extraction des en-têtes
+      const headers = lines[0].split('|').map(h => h.trim()).slice(1, -1);
+      
+      // Les données commencent à l'index 2 (après la ligne de séparation |---|---|)
+      const dataRows = lines.slice(2);
+      
+      const tableData = dataRows.map(row => {
+        // Extraire les cellules en ignorant les pipes de bordure
+        const cells = row.split('|').map(c => c.trim()).slice(1, -1);
+        const rowObj: any = {};
+        headers.forEach((h, i) => {
+          rowObj[h] = cells[i] || "";
+        });
+        return rowObj;
+      });
+      
+      let tableName = `table ${tableIndex}`;
+      if (tableIndex === 0) tableName = "table 0 - Signature worksheet";
+      
+      const tableObj: any = {};
+      tableObj[tableName] = tableData;
+      result["Etape mission - Feuille couverture"].push(tableObj);
+      
+      tableIndex++;
+    });
+    
+    return result;
+  }
+  /**
+   * Pivote les deux premières tables Markdown (Signature et Couverture) 
+   * pour les transformer de N-colonnes à 2 colonnes (Rubrique, Description)
+   */
+  public pivotMarkdownTables(markdown: string): string {
+    const sections = markdown.split(/(?:\r?\n){2,}/);
+    let tableIndex = 0;
+    
+    const modifiedSections = sections.map((section) => {
+      const lines = section.trim().split(/\r?\n/).map(l => l.trim());
+      const tableLines = lines.filter(l => l.startsWith('|'));
+      
+      if (tableLines.length < 3) return section; // Pas une table markdown valide
+      
+      // Pivot only the first two tables
+      if (tableIndex === 0 || tableIndex === 1) {
+        const headers = tableLines[0].split('|').map(h => h.trim()).slice(1, -1);
+        const dataRows = tableLines.slice(2);
+        
+        let newTable = `| Rubrique | Description |\n|---|---|`;
+        
+        if (dataRows.length > 0) {
+          const cells = dataRows[0].split('|').map(c => c.trim()).slice(1, -1);
+          headers.forEach((h, i) => {
+            if (h) {
+              newTable += `\n| ${h} | ${cells[i] || ""} |`;
+            }
+          });
+          
+          tableIndex++;
+          return newTable;
+        }
+      }
+      
+      tableIndex++;
+      return section;
+    });
+    
+    return modifiedSections.join('\n\n');
+  }
+
+  /**
    * Processes the data to generate the audit workpaper HTML/Markdown
    */
   public process(data: any): string {
+    // Si c'est une string markdown, on pivote simplement les deux premières tables
+    // et on retourne le markdown pour qu'il soit rendu avec le style standard du thème.
+    if (typeof data === 'string') {
+      return this.pivotMarkdownTables(data);
+    }
+    
     let html = `
       <style>
         .clara-papier-travail { font-family: 'Inter', sans-serif; color: #333; }

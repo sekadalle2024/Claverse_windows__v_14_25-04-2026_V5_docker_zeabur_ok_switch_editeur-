@@ -1742,6 +1742,13 @@ export class ClaraApiService {
       if (firstItem && typeof firstItem === "object" && "output" in firstItem) {
         console.log('✅ FORMAT 1 DETECTE: Array avec objet contenant "output"');
         contentToDisplay = String(firstItem.output || "");
+        
+        // 🔧 DÉTECTION PAPIER DE TRAVAIL MARKDOWN
+        if (claraPapierTravailService.detectPapierTravail(contentToDisplay)) {
+          console.log("📋 === PAPIER DE TRAVAIL DÉTECTÉ DANS MARKDOWN (FORMAT 1) ===");
+          contentToDisplay = claraPapierTravailService.process(contentToDisplay);
+        }
+
         metadata = {
           stats: firstItem.stats || {},
           debugInfo: firstItem.debugInfo || [],
@@ -1789,6 +1796,13 @@ export class ClaraApiService {
     ) {
       console.log('✅ FORMAT 3 DETECTE: Objet avec "output" direct');
       contentToDisplay = result.output;
+      
+      // 🔧 DÉTECTION PAPIER DE TRAVAIL MARKDOWN
+      if (claraPapierTravailService.detectPapierTravail(contentToDisplay)) {
+        console.log("📋 === PAPIER DE TRAVAIL DÉTECTÉ DANS MARKDOWN (FORMAT 3) ===");
+        contentToDisplay = claraPapierTravailService.process(contentToDisplay);
+      }
+
       metadata = { ...result, format: "direct_output" };
       delete metadata.output;
       console.log("🔍 === FIN ANALYSE (FORMAT 3) ===");
