@@ -192,6 +192,14 @@
             { text: "🔄 Actualiser Schéma de calcul", action: () => this.actualiserSchemaCalcul() },
             { text: "🗑️ Supprimer Schéma de calcul", action: () => this.supprimerSchemaCalcul() },
             { text: "─────────────────────", action: null },
+            { text: "📎 Ajouter Cross référence horizontale", action: () => this.ajouterCrossRefHorizontale(), shortcut: "Ctrl+Shift+H" },
+            { text: "🔄 Actualiser Cross référence", action: () => this.actualiserCrossRefHorizontale() },
+            { text: "🗑️ Supprimer Cross référence", action: () => this.supprimerCrossRefHorizontale() },
+            { text: "─────────────────────", action: null },
+            { text: "📊 Ajouter Totalisation", action: () => this.ajouterTotalisation(), shortcut: "Ctrl+Shift+T" },
+            { text: "🔄 Actualiser Totalisation", action: () => this.actualiserTotalisation() },
+            { text: "🗑️ Supprimer Totalisation", action: () => this.supprimerTotalisation() },
+            { text: "─────────────────────", action: null },
             { text: "📤 Importer X-Ref documentaire", action: () => this.importerXRefDocumentaire(), shortcut: "Ctrl+Shift+X" },
             { text: "📂 Ouvrir X-Ref documentaire", action: () => this.ouvrirXRefDocumentaire(), shortcut: "Ctrl+Shift+O" },
             { text: "📋 Afficher X-Ref documentaire", action: () => this.afficherXRefDocumentaire() },
@@ -423,6 +431,10 @@
         if (e.ctrlKey && e.shiftKey && e.key === "C" && this.targetTable) { e.preventDefault(); this.exportSyntheseCAC(); }
         // Raccourci Ajouter Schéma de Calcul
         if (e.ctrlKey && e.shiftKey && e.key === "K" && this.targetTable) { e.preventDefault(); this.ajouterSchemaCalcul(); }
+        // Raccourci Ajouter Cross Référence Horizontale
+        if (e.ctrlKey && e.shiftKey && e.key === "H" && this.targetTable) { e.preventDefault(); this.ajouterCrossRefHorizontale(); }
+        // Raccourci Ajouter Totalisation
+        if (e.ctrlKey && e.shiftKey && e.key === "T" && this.targetTable) { e.preventDefault(); this.ajouterTotalisation(); }
       });
     }
 
@@ -10674,6 +10686,407 @@
         
       } catch (error) {
         console.error("❌ [Schéma Calcul] Erreur:", error);
+        this.showAlert(`❌ Erreur lors de la suppression:\n\n${error.message}`);
+      }
+    }
+
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════════
+     * SECTION: PAPIER DE TRAVAIL - CROSS RÉFÉRENCE HORIZONTALE
+     * ═══════════════════════════════════════════════════════════════════════════════
+     */
+
+    /**
+     * Ajouter une cross référence horizontale à la table active
+     */
+    ajouterCrossRefHorizontale() {
+      console.log("📎 [Cross Ref] Ajout de la cross référence horizontale");
+      
+      if (!this.targetTable) {
+        this.showAlert("⚠️ Aucune table sélectionnée.");
+        return;
+      }
+
+      try {
+        // Vérifier que c'est une table modelisée
+        if (!this.isModelizedTable(this.targetTable)) {
+          this.showAlert("⚠️ Cette table n'est pas une table modelisée.\n\nLa cross référence horizontale nécessite une table avec:\n- Conclusion\n- Assertion\n- CTR\n- Ecart");
+          return;
+        }
+
+        // Trouver la div parente
+        const parentDiv = this.targetTable.closest('div.prose, div[class*="prose"]');
+        if (!parentDiv) {
+          this.showAlert("⚠️ Impossible de trouver la section parente.");
+          return;
+        }
+
+        // Trouver toutes les tables dans la div
+        const tables = parentDiv.querySelectorAll("table");
+        
+        if (tables.length < 2) {
+          this.showAlert("⚠️ Pas assez de tables dans cette section.\n\nLa cross référence nécessite au moins 2 tables:\n- Une table avec 'Nature de test'\n- Une table principale");
+          return;
+        }
+
+        // Trouver la table 2 avec "Nature de test"
+        let table2 = null;
+        let natureDeTest = null;
+
+        for (let i = 0; i < tables.length; i++) {
+          const table = tables[i];
+          const result = this.extractNatureDeTest(table);
+          if (result) {
+            table2 = table;
+            natureDeTest = result;
+            break;
+          }
+        }
+
+        if (!table2 || !natureDeTest) {
+          this.showAlert("⚠️ Aucune table avec 'Nature de test' trouvée.\n\nLa cross référence nécessite une table contenant:\n- Une colonne 'Nature de test'\n- Une valeur (Validation, Mouvement, Rapprochement, etc.)");
+          return;
+        }
+
+        // Vérifier si une cross référence existe déjà
+        const existingCrossRef = this.findExistingCrossRefDirect(this.targetTable);
+        
+        if (existingCrossRef) {
+          const response = confirm("Une cross référence existe déjà pour cette table.\n\nVoulez-vous la remplacer ?");
+          if (response) {
+            existingCrossRef.remove();
+          } else {
+            return;
+          }
+        }
+
+        // Créer la cross référence
+        this.createCrossRefTableDirect(this.targetTable, natureDeTest);
+        
+        this.showQuickNotification(`✅ Cross référence ajoutée: ${natureDeTest}`);
+        console.log("✅ [Cross Ref] Cross référence créée avec succès!");
+        
+      } catch (error) {
+        console.error("❌ [Cross Ref] Erreur:", error);
+        this.showAlert(`❌ Erreur lors de l'ajout:\n\n${error.message}`);
+      }
+    }
+
+    /**
+     * Trouver une cross référence existante
+     */
+    findExistingCrossRefDirect(table) {
+      const tableId = table.dataset.tableId || this.generateTableIdForCrossRef(table);
+      return document.querySelector(`table.claraverse-cross-ref-horizontale[data-for-table="${tableId}"]`);
+    }
+
+    /**
+     * Créer la table de cross référence
+     */
+    createCrossRefTableDirect(tablePrincipale, natureDeTest) {
+      // Déterminer le modèle
+      const modele = this.determinerModeleCrossRef(natureDeTest);
+      
+      if (!modele) {
+        throw new Error(`Aucun modèle trouvé pour: ${natureDeTest}`);
+      }
+
+      // Créer la table
+      const crossRefTable = document.createElement("table");
+      crossRefTable.className = "min-w-full border border-gray-200 dark:border-gray-700 rounded-lg claraverse-cross-ref-horizontale";
+      crossRefTable.style.cssText = `
+        margin-bottom: 1rem;
+        border-collapse: separate;
+        border-spacing: 0;
+        background: #f0f9ff;
+      `;
+
+      // Générer un ID unique
+      const tableId = tablePrincipale.dataset.tableId || this.generateTableIdForCrossRef(tablePrincipale);
+      tablePrincipale.dataset.tableId = tableId;
+      
+      const crossRefId = `crossref_${tableId}_${Date.now()}`;
+      crossRefTable.dataset.crossRefId = crossRefId;
+      crossRefTable.dataset.forTable = tableId;
+
+      // Créer le tbody
+      const tbody = document.createElement("tbody");
+      const row = document.createElement("tr");
+
+      // Créer les cellules
+      for (let i = 0; i < modele.nbColonnes; i++) {
+        const td = document.createElement("td");
+        td.className = "px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700";
+        td.style.cssText = `
+          background: #e0f2fe;
+          font-weight: 500;
+          text-align: center;
+          min-width: 80px;
+        `;
+        td.textContent = `[  ]`;
+        td.contentEditable = "true";
+        row.appendChild(td);
+      }
+
+      tbody.appendChild(row);
+      crossRefTable.appendChild(tbody);
+
+      // Insérer au-dessus de la table principale
+      tablePrincipale.parentNode.insertBefore(crossRefTable, tablePrincipale);
+
+      console.log(`✅ [Cross Ref] Table créée avec ${modele.nbColonnes} colonnes`);
+    }
+
+    /**
+     * Déterminer le modèle de cross référence
+     */
+    determinerModeleCrossRef(natureDeTest) {
+      const nature = natureDeTest.toLowerCase();
+
+      if (nature.includes("validation")) {
+        return { type: "Validation", nbColonnes: 5 };
+      }
+
+      if (nature.includes("mouvement")) {
+        return { type: "Mouvement", nbColonnes: 6 };
+      }
+
+      if (nature.includes("rapprochement")) {
+        return { type: "Rapprochement", nbColonnes: 3 };
+      }
+
+      if (nature.includes("separation") || nature.includes("séparation")) {
+        return { type: "Séparation", nbColonnes: 3 };
+      }
+
+      if (nature.includes("estimation")) {
+        return { type: "Estimation", nbColonnes: 5 };
+      }
+
+      if (nature.includes("revue") && nature.includes("analytique")) {
+        return { type: "Revue analytique", nbColonnes: 3 };
+      }
+
+      if (nature.includes("cadrage") && nature.includes("tva")) {
+        return { type: "Cadrage TVA", nbColonnes: 6 };
+      }
+
+      if (nature.includes("cotisation") && nature.includes("sociale")) {
+        return { type: "Cotisations sociales", nbColonnes: 4 };
+      }
+
+      if (nature.includes("vierge")) {
+        return { type: "Vierge", nbColonnes: 0 };
+      }
+
+      if (nature.includes("modelisation") || nature.includes("modélisation")) {
+        const variables = this.extractVariablesFromNatureCrossRef(natureDeTest);
+        return { type: "Modélisation", nbColonnes: variables.length };
+      }
+
+      if (natureDeTest.trim() !== "") {
+        const variables = this.extractVariablesFromNatureCrossRef(natureDeTest);
+        if (variables.length > 0) {
+          return { type: "Modélisation (auto-détecté)", nbColonnes: variables.length };
+        }
+      }
+
+      return null;
+    }
+
+    /**
+     * Extraire les variables d'une formule
+     */
+    extractVariablesFromNatureCrossRef(natureDeTest) {
+      const variablePattern = /\([A-Z]\)/g;
+      const matches = natureDeTest.match(variablePattern);
+      
+      if (!matches) return [];
+
+      return [...new Set(matches)];
+    }
+
+    /**
+     * Générer un ID pour une table (cross ref)
+     */
+    generateTableIdForCrossRef(table) {
+      const headers = this.getTableHeaders(table);
+      const headerText = headers.join("__").replace(/\s+/g, "_");
+      let hash = 0;
+      for (let i = 0; i < headerText.length; i++) {
+        const char = headerText.charCodeAt(i);
+        hash = (hash << 5) - hash + char;
+        hash = hash & hash;
+      }
+      return `table_${Math.abs(hash).toString(36)}`;
+    }
+
+    /**
+     * Actualiser la cross référence de la table active
+     */
+    actualiserCrossRefHorizontale() {
+      console.log("🔄 [Cross Ref] Actualisation de la cross référence");
+      
+      if (!this.targetTable) {
+        this.showAlert("⚠️ Aucune table sélectionnée.");
+        return;
+      }
+
+      try {
+        const existingCrossRef = this.findExistingCrossRefDirect(this.targetTable);
+        
+        if (!existingCrossRef) {
+          this.showAlert("⚠️ Aucune cross référence trouvée pour cette table.\n\nUtilisez 'Ajouter Cross référence horizontale' pour en créer une.");
+          return;
+        }
+
+        // Supprimer l'ancienne
+        existingCrossRef.remove();
+        
+        // Recréer
+        this.ajouterCrossRefHorizontale();
+        
+      } catch (error) {
+        console.error("❌ [Cross Ref] Erreur:", error);
+        this.showAlert(`❌ Erreur lors de l'actualisation:\n\n${error.message}`);
+      }
+    }
+
+    /**
+     * Supprimer la cross référence de la table active
+     */
+    supprimerCrossRefHorizontale() {
+      console.log("🗑️ [Cross Ref] Suppression de la cross référence");
+      
+      if (!this.targetTable) {
+        this.showAlert("⚠️ Aucune table sélectionnée.");
+        return;
+      }
+
+      try {
+        const crossRefTable = this.findExistingCrossRefDirect(this.targetTable);
+        
+        if (!crossRefTable) {
+          this.showAlert("⚠️ Aucune cross référence trouvée pour cette table.");
+          console.warn("⚠️ [Cross Ref] Aucune cross référence trouvée");
+          return;
+        }
+
+        if (confirm("Supprimer la cross référence de cette table ?")) {
+          crossRefTable.remove();
+          
+          this.showQuickNotification("✅ Cross référence supprimée");
+          console.log("✅ [Cross Ref] Cross référence supprimée avec succès");
+        }
+        
+      } catch (error) {
+        console.error("❌ [Cross Ref] Erreur:", error);
+        this.showAlert(`❌ Erreur lors de la suppression:\n\n${error.message}`);
+      }
+    }
+
+    /**
+     * ═══════════════════════════════════════════════════════════════════════════════
+     * SECTION: PAPIER DE TRAVAIL - TOTALISATION
+     * ═══════════════════════════════════════════════════════════════════════════════
+     */
+
+    /**
+     * Ajouter une ligne de totalisation à la table active
+     */
+    ajouterTotalisation() {
+      console.log("📊 [Totalisation] Ajout de la totalisation");
+      
+      if (!this.targetTable) {
+        this.showAlert("⚠️ Aucune table sélectionnée.");
+        return;
+      }
+
+      try {
+        // Vérifier si le module est chargé
+        if (!window.PapierTravailTotalisation) {
+          this.showAlert("❌ Module de totalisation non chargé.\n\nAssurez-vous que papier-travail-totalisation.js est chargé.");
+          console.error("❌ [Totalisation] Module non chargé");
+          return;
+        }
+
+        // Appeler le module
+        const result = window.PapierTravailTotalisation.ajouterTotalisation(this.targetTable);
+        
+        if (result) {
+          this.showQuickNotification("✅ Totalisation ajoutée");
+          console.log("✅ [Totalisation] Totalisation ajoutée avec succès");
+        } else {
+          this.showAlert("⚠️ Impossible d'ajouter la totalisation.\n\nVérifiez que la table contient des colonnes numériques.");
+          console.warn("⚠️ [Totalisation] Aucune colonne numérique détectée");
+        }
+        
+      } catch (error) {
+        console.error("❌ [Totalisation] Erreur:", error);
+        this.showAlert(`❌ Erreur lors de l'ajout:\n\n${error.message}`);
+      }
+    }
+
+    /**
+     * Actualiser la totalisation de la table active
+     */
+    actualiserTotalisation() {
+      console.log("🔄 [Totalisation] Actualisation de la totalisation");
+      
+      if (!this.targetTable) {
+        this.showAlert("⚠️ Aucune table sélectionnée.");
+        return;
+      }
+
+      try {
+        // Vérifier si le module est chargé
+        if (!window.PapierTravailTotalisation) {
+          this.showAlert("❌ Module de totalisation non chargé.");
+          console.error("❌ [Totalisation] Module non chargé");
+          return;
+        }
+
+        // Appeler le module
+        window.PapierTravailTotalisation.actualiserTotalisation(this.targetTable);
+        
+        this.showQuickNotification("✅ Totalisation actualisée");
+        console.log("✅ [Totalisation] Totalisation actualisée avec succès");
+        
+      } catch (error) {
+        console.error("❌ [Totalisation] Erreur:", error);
+        this.showAlert(`❌ Erreur lors de l'actualisation:\n\n${error.message}`);
+      }
+    }
+
+    /**
+     * Supprimer la totalisation de la table active
+     */
+    supprimerTotalisation() {
+      console.log("🗑️ [Totalisation] Suppression de la totalisation");
+      
+      if (!this.targetTable) {
+        this.showAlert("⚠️ Aucune table sélectionnée.");
+        return;
+      }
+
+      try {
+        // Vérifier si le module est chargé
+        if (!window.PapierTravailTotalisation) {
+          this.showAlert("❌ Module de totalisation non chargé.");
+          console.error("❌ [Totalisation] Module non chargé");
+          return;
+        }
+
+        if (confirm("Supprimer la totalisation de cette table ?")) {
+          // Appeler le module
+          window.PapierTravailTotalisation.supprimerTotalisation(this.targetTable);
+          
+          this.showQuickNotification("✅ Totalisation supprimée");
+          console.log("✅ [Totalisation] Totalisation supprimée avec succès");
+        }
+        
+      } catch (error) {
+        console.error("❌ [Totalisation] Erreur:", error);
         this.showAlert(`❌ Erreur lors de la suppression:\n\n${error.message}`);
       }
     }

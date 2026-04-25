@@ -1,27 +1,39 @@
-# 📐 Architecture - Schéma de Calcul
+# 📐 Architecture - Schéma de Calcul et Cross Référence Horizontale
 
 ## Vue d'ensemble
 
-Le système de schéma de calcul est composé de 3 couches principales:
+Le système de papier de travail est composé de 2 modules principaux:
+1. **Schéma de Calcul**: Formules de calcul pour les tests
+2. **Cross Référence Horizontale**: Références documentaires pour chaque variable
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    COUCHE PRÉSENTATION                       │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │  Menu Contextuel (menu.js)                           │  │
-│  │  - Ajouter Schéma (Ctrl+Shift+S)                     │  │
+│  │  - Ajouter Schéma (Ctrl+Shift+K)                     │  │
 │  │  - Régénérer Schéma                                   │  │
 │  │  - Supprimer Schéma                                   │  │
+│  │  - Ajouter Cross Référence (Ctrl+Shift+H)            │  │
+│  │  - Actualiser Cross Référence                         │  │
+│  │  - Supprimer Cross Référence                          │  │
 │  └──────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
 │                    COUCHE LOGIQUE                            │
 │  ┌──────────────────────────────────────────────────────┐  │
-│  │  SchemaCalculManager (papier-travail-schema-calcul.js)│ │
+│  │  SchemaCalculManager                                  │  │
 │  │  - Détection automatique des tables                   │  │
 │  │  - Extraction "Nature de test"                        │  │
 │  │  - Génération du schéma approprié                     │  │
+│  │  - Gestion de la persistance                          │  │
+│  └──────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  CrossRefHorizontaleManager                           │  │
+│  │  - Détection automatique des tables                   │  │
+│  │  - Extraction "Nature de test"                        │  │
+│  │  - Génération des références selon nature            │  │
 │  │  - Gestion de la persistance                          │  │
 │  └──────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────┘
@@ -30,7 +42,8 @@ Le système de schéma de calcul est composé de 3 couches principales:
 │                    COUCHE DONNÉES                            │
 │  ┌──────────────────────────────────────────────────────┐  │
 │  │  localStorage                                         │  │
-│  │  - Clé: claraverse_schema_calcul_data                │  │
+│  │  - Schéma: claraverse_schema_calcul_data             │  │
+│  │  - Cross Ref: claraverse_cross_ref_data              │  │
 │  │  - Format: JSON                                       │  │
 │  │  - Sauvegarde automatique (debounce 500ms)           │  │
 │  └──────────────────────────────────────────────────────┘  │
