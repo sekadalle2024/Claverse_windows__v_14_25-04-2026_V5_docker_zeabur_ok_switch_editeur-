@@ -1,0 +1,155 @@
+{
+  "note": "5",
+  "titre": "",
+  "date_generation": "2026-04-25T14:24:49.437228",
+  "fichier_balance": "py_backend/P000 -BALANCE DEMO N_N-1_N-2.xls",
+  "hash_md5_balance": "cf926871c313939e8e562108090d2f57",
+  "lignes": [
+    {
+      "libelle": "Clients",
+      "montant": 2359662448.0,
+      "comptes_sources": [
+        {
+          "compte": "411",
+          "type": "brut",
+          "solde_debit_n": 2456101882.0,
+          "solde_credit_n": 96439434.0
+        },
+        {
+          "compte": "4911",
+          "type": "amortissement",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        }
+      ],
+      "timestamp": "2026-04-25T14:24:49.469117"
+    },
+    {
+      "libelle": "Clients - Effets à recevoir",
+      "montant": -73915604.0,
+      "comptes_sources": [
+        {
+          "compte": "412",
+          "type": "brut",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        },
+        {
+          "compte": "4912",
+          "type": "amortissement",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 73915604.0
+        }
+      ],
+      "timestamp": "2026-04-25T14:24:49.506019"
+    },
+    {
+      "libelle": "Clients douteux ou litigieux",
+      "montant": 0.0,
+      "comptes_sources": [
+        {
+          "compte": "413",
+          "type": "brut",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        },
+        {
+          "compte": "4913",
+          "type": "amortissement",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        }
+      ],
+      "timestamp": "2026-04-25T14:24:49.536978"
+    },
+    {
+      "libelle": "Clients - Retenues de garantie",
+      "montant": 0.0,
+      "comptes_sources": [
+        {
+          "compte": "414",
+          "type": "brut",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        },
+        {
+          "compte": "4914",
+          "type": "amortissement",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        }
+      ],
+      "timestamp": "2026-04-25T14:24:49.567083"
+    },
+    {
+      "libelle": "Clients - Créances sur travaux non encore facturables",
+      "montant": 0.0,
+      "comptes_sources": [
+        {
+          "compte": "415",
+          "type": "brut",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        },
+        {
+          "compte": "4915",
+          "type": "amortissement",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        }
+      ],
+      "timestamp": "2026-04-25T14:24:49.597330"
+    },
+    {
+      "libelle": "Clients - Factures à établir",
+      "montant": 73915603.0,
+      "comptes_sources": [
+        {
+          "compte": "416",
+          "type": "brut",
+          "solde_debit_n": 73915603.0,
+          "solde_credit_n": 0.0
+        },
+        {
+          "compte": "4916",
+          "type": "amortissement",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        }
+      ],
+      "timestamp": "2026-04-25T14:24:49.630340"
+    },
+    {
+      "libelle": "Autres créances clients",
+      "montant": 82486964.0,
+      "comptes_sources": [
+        {
+          "compte": "417",
+          "type": "brut",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        },
+        {
+          "compte": "418",
+          "type": "brut",
+          "solde_debit_n": 82486964.0,
+          "solde_credit_n": 0.0
+        },
+        {
+          "compte": "4917",
+          "type": "amortissement",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        },
+        {
+          "compte": "4918",
+          "type": "amortissement",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        }
+      ],
+      "timestamp": "2026-04-25T14:24:49.811447"
+    }
+  ],
+  "total": {}
+}

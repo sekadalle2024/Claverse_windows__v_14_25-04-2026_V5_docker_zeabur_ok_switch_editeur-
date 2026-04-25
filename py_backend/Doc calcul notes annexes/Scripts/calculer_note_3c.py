@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Script de calcul de la NOTE 3A - IMMOBILISATIONS INCORPORELLES
+Script de calcul de la NOTE 3C - IMMOBILISATIONS FINANCIÈRES
 Syscohada Révisé
 
-Ce script calcule la Note 3A à partir des balances N, N-1, N-2 en utilisant
+Ce script calcule la Note 3C à partir des balances N, N-1, N-2 en utilisant
 l'architecture modulaire du système de calcul automatique des notes annexes.
 
 Auteur: Système de calcul automatique des notes annexes SYSCOHADA
@@ -24,67 +24,73 @@ sys.path.insert(0, str(current_dir))
 from calculateur_note_template import CalculateurNote
 
 
-class CalculateurNote3A(CalculateurNote):
+class CalculateurNote3C(CalculateurNote):
     """
-    Calculateur pour la Note 3A - Immobilisations Incorporelles.
+    Calculateur pour la Note 3C - Immobilisations Financières.
     
     Cette classe hérite de CalculateurNote et implémente le calcul spécifique
-    de la Note 3A avec les 4 lignes d'immobilisations incorporelles:
-    - Frais de recherche et de développement
-    - Brevets, licences, logiciels et droits similaires
-    - Fonds commercial et droit au bail
-    - Autres immobilisations incorporelles
+    de la Note 3C avec les lignes d'immobilisations financières:
+    - Titres de participation
+    - Autres immobilisations financières
+    - Prêts et créances
+    - Dépôts et cautionnements versés
     
     Mapping des comptes SYSCOHADA:
-    - Comptes bruts: 21X (Immobilisations incorporelles)
-    - Comptes amortissements: 281X (Amortissements des immobilisations incorporelles)
-    - Comptes provisions: 291X (Provisions pour dépréciation des immobilisations incorporelles)
+    - Comptes bruts: 26X (Immobilisations financières)
+    - Comptes provisions: 27X (Provisions pour dépréciation des immobilisations financières)
+    
+    Note: Les immobilisations financières ne sont généralement pas amorties,
+    mais peuvent faire l'objet de provisions pour dépréciation (comptes 27X).
     """
     
     def __init__(self, fichier_balance: str):
         """
-        Initialise le calculateur de la Note 3A.
+        Initialise le calculateur de la Note 3C.
         
         Args:
             fichier_balance: Chemin vers le fichier Excel des balances
         """
-        super().__init__(fichier_balance, "3A", "IMMOBILISATIONS INCORPORELLES")
+        super().__init__(fichier_balance, "3C", "IMMOBILISATIONS FINANCIÈRES")
         
-        # Mapping des comptes pour chaque ligne de la Note 3A
+        # Mapping des comptes pour chaque ligne de la Note 3C
         self.mapping_comptes = {
-            'Frais de recherche et de développement': {
-                'brut': ['211'],
-                'amort': ['2811', '2911']
+            'Titres de participation': {
+                'brut': ['261'],
+                'amort': ['271']  # Provisions pour dépréciation
             },
-            'Brevets, licences, logiciels et droits similaires': {
-                'brut': ['212', '213'],
-                'amort': ['2812', '2813', '2912', '2913']
+            'Autres titres immobilisés': {
+                'brut': ['262', '263'],
+                'amort': ['272', '273']
             },
-            'Fonds commercial et droit au bail': {
-                'brut': ['214', '215'],
-                'amort': ['2814', '2815', '2914', '2915']
+            'Prêts et créances': {
+                'brut': ['264', '265'],
+                'amort': ['274', '275']
             },
-            'Autres immobilisations incorporelles': {
-                'brut': ['216', '217', '218'],
-                'amort': ['2816', '2817', '2818', '2916', '2917', '2918']
+            'Dépôts et cautionnements versés': {
+                'brut': ['266', '267'],
+                'amort': ['276', '277']
+            },
+            'Autres immobilisations financières': {
+                'brut': ['268'],
+                'amort': ['278']
             }
         }
     
     def generer_note(self) -> pd.DataFrame:
         """
-        Génère la Note 3A complète avec les 4 lignes et le total.
+        Génère la Note 3C complète avec les 5 lignes et le total.
         
         Cette méthode:
-        1. Calcule chaque ligne d'immobilisation incorporelle
+        1. Calcule chaque ligne d'immobilisation financière
         2. Calcule la ligne de total
         3. Retourne un DataFrame avec toutes les lignes
         
         Returns:
-            DataFrame contenant les 5 lignes (4 lignes + total)
+            DataFrame contenant les 6 lignes (5 lignes + total)
         """
         lignes = []
         
-        # Calculer chaque ligne d'immobilisation incorporelle
+        # Calculer chaque ligne d'immobilisation financière
         for libelle, comptes in self.mapping_comptes.items():
             print(f"  Calcul: {libelle}...")
             
@@ -116,7 +122,7 @@ class CalculateurNote3A(CalculateurNote):
             Dict représentant la ligne de total
         """
         total = {
-            'libelle': 'TOTAL IMMOBILISATIONS INCORPORELLES',
+            'libelle': 'TOTAL IMMOBILISATIONS FINANCIÈRES',
             'brut_ouverture': df['brut_ouverture'].sum(),
             'augmentations': df['augmentations'].sum(),
             'diminutions': df['diminutions'].sum(),
@@ -138,7 +144,7 @@ if __name__ == "__main__":
     
     # Parser les arguments de ligne de commande
     parser = argparse.ArgumentParser(
-        description='Calcul de la Note 3A - Immobilisations Incorporelles'
+        description='Calcul de la Note 3C - Immobilisations Financières'
     )
     parser.add_argument(
         'fichier_balance',
@@ -146,19 +152,19 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         '--output-html',
-        default='note_3a_immobilisations_incorporelles.html',
-        help='Chemin du fichier HTML de sortie (défaut: note_3a_immobilisations_incorporelles.html)'
+        default='note_3c_immobilisations_financieres.html',
+        help='Chemin du fichier HTML de sortie (défaut: note_3c_immobilisations_financieres.html)'
     )
     parser.add_argument(
         '--output-trace',
-        default='note_3a_trace.json',
-        help='Chemin du fichier de trace JSON (défaut: note_3a_trace.json)'
+        default='note_3c_trace.json',
+        help='Chemin du fichier de trace JSON (défaut: note_3c_trace.json)'
     )
     
     args = parser.parse_args()
     
     # Créer le calculateur
-    calculateur = CalculateurNote3A(args.fichier_balance)
+    calculateur = CalculateurNote3C(args.fichier_balance)
     
     # Exécuter le calcul complet
     calculateur.executer(

@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Script de calcul de la NOTE 3A - IMMOBILISATIONS INCORPORELLES
+Script de calcul de la NOTE 5 - CRÉANCES CLIENTS
 Syscohada Révisé
 
-Ce script calcule la Note 3A à partir des balances N, N-1, N-2 en utilisant
+Ce script calcule la Note 5 à partir des balances N, N-1, N-2 en utilisant
 l'architecture modulaire du système de calcul automatique des notes annexes.
 
 Auteur: Système de calcul automatique des notes annexes SYSCOHADA
@@ -24,67 +24,91 @@ sys.path.insert(0, str(current_dir))
 from calculateur_note_template import CalculateurNote
 
 
-class CalculateurNote3A(CalculateurNote):
+class CalculateurNote5(CalculateurNote):
     """
-    Calculateur pour la Note 3A - Immobilisations Incorporelles.
+    Calculateur pour la Note 5 - Créances Clients.
     
     Cette classe hérite de CalculateurNote et implémente le calcul spécifique
-    de la Note 3A avec les 4 lignes d'immobilisations incorporelles:
-    - Frais de recherche et de développement
-    - Brevets, licences, logiciels et droits similaires
-    - Fonds commercial et droit au bail
-    - Autres immobilisations incorporelles
+    de la Note 5 avec les lignes de créances clients:
+    - Clients
+    - Clients - Effets à recevoir
+    - Clients douteux ou litigieux
+    - Clients - Retenues de garantie
+    - Clients - Créances sur travaux non encore facturables
+    - Clients - Factures à établir
     
     Mapping des comptes SYSCOHADA:
-    - Comptes bruts: 21X (Immobilisations incorporelles)
-    - Comptes amortissements: 281X (Amortissements des immobilisations incorporelles)
-    - Comptes provisions: 291X (Provisions pour dépréciation des immobilisations incorporelles)
+    - Comptes créances clients: 41X (Clients et comptes rattachés)
+      * 411: Clients
+      * 412: Clients - Effets à recevoir
+      * 413: Clients douteux ou litigieux
+      * 414: Clients - Retenues de garantie
+      * 415: Clients - Créances sur travaux non encore facturables
+      * 416: Clients - Factures à établir
+      * 417: Clients - Créances sur cessions d'immobilisations
+      * 418: Clients - Produits à recevoir
+    - Comptes provisions: 491X (Provisions pour dépréciation des comptes clients)
+    
+    Note: Les créances clients peuvent faire l'objet de provisions pour dépréciation
+    (comptes 491X) en cas de risque de non-recouvrement.
     """
     
     def __init__(self, fichier_balance: str):
         """
-        Initialise le calculateur de la Note 3A.
+        Initialise le calculateur de la Note 5.
         
         Args:
             fichier_balance: Chemin vers le fichier Excel des balances
         """
-        super().__init__(fichier_balance, "3A", "IMMOBILISATIONS INCORPORELLES")
+        super().__init__(fichier_balance, "5", "CRÉANCES CLIENTS")
         
-        # Mapping des comptes pour chaque ligne de la Note 3A
+        # Mapping des comptes pour chaque ligne de la Note 5
         self.mapping_comptes = {
-            'Frais de recherche et de développement': {
-                'brut': ['211'],
-                'amort': ['2811', '2911']
+            'Clients': {
+                'brut': ['411'],
+                'amort': ['4911']  # Provisions pour dépréciation des comptes clients
             },
-            'Brevets, licences, logiciels et droits similaires': {
-                'brut': ['212', '213'],
-                'amort': ['2812', '2813', '2912', '2913']
+            'Clients - Effets à recevoir': {
+                'brut': ['412'],
+                'amort': ['4912']  # Provisions pour dépréciation des effets à recevoir
             },
-            'Fonds commercial et droit au bail': {
-                'brut': ['214', '215'],
-                'amort': ['2814', '2815', '2914', '2915']
+            'Clients douteux ou litigieux': {
+                'brut': ['413'],
+                'amort': ['4913']  # Provisions pour dépréciation des clients douteux
             },
-            'Autres immobilisations incorporelles': {
-                'brut': ['216', '217', '218'],
-                'amort': ['2816', '2817', '2818', '2916', '2917', '2918']
+            'Clients - Retenues de garantie': {
+                'brut': ['414'],
+                'amort': ['4914']  # Provisions pour dépréciation des retenues de garantie
+            },
+            'Clients - Créances sur travaux non encore facturables': {
+                'brut': ['415'],
+                'amort': ['4915']  # Provisions pour dépréciation des créances sur travaux
+            },
+            'Clients - Factures à établir': {
+                'brut': ['416'],
+                'amort': ['4916']  # Provisions pour dépréciation des factures à établir
+            },
+            'Autres créances clients': {
+                'brut': ['417', '418'],
+                'amort': ['4917', '4918']  # Provisions pour dépréciation des autres créances
             }
         }
     
     def generer_note(self) -> pd.DataFrame:
         """
-        Génère la Note 3A complète avec les 4 lignes et le total.
+        Génère la Note 5 complète avec les 7 lignes et le total.
         
         Cette méthode:
-        1. Calcule chaque ligne d'immobilisation incorporelle
+        1. Calcule chaque ligne de créances clients
         2. Calcule la ligne de total
         3. Retourne un DataFrame avec toutes les lignes
         
         Returns:
-            DataFrame contenant les 5 lignes (4 lignes + total)
+            DataFrame contenant les 8 lignes (7 lignes + total)
         """
         lignes = []
         
-        # Calculer chaque ligne d'immobilisation incorporelle
+        # Calculer chaque ligne de créances clients
         for libelle, comptes in self.mapping_comptes.items():
             print(f"  Calcul: {libelle}...")
             
@@ -116,7 +140,7 @@ class CalculateurNote3A(CalculateurNote):
             Dict représentant la ligne de total
         """
         total = {
-            'libelle': 'TOTAL IMMOBILISATIONS INCORPORELLES',
+            'libelle': 'TOTAL CRÉANCES CLIENTS',
             'brut_ouverture': df['brut_ouverture'].sum(),
             'augmentations': df['augmentations'].sum(),
             'diminutions': df['diminutions'].sum(),
@@ -138,27 +162,29 @@ if __name__ == "__main__":
     
     # Parser les arguments de ligne de commande
     parser = argparse.ArgumentParser(
-        description='Calcul de la Note 3A - Immobilisations Incorporelles'
+        description='Calcul de la Note 5 - Créances Clients'
     )
     parser.add_argument(
         'fichier_balance',
+        nargs='?',
+        default='../../P000 -BALANCE DEMO N_N-1_N-2.xls',
         help='Chemin vers le fichier Excel des balances (N, N-1, N-2)'
     )
     parser.add_argument(
         '--output-html',
-        default='note_3a_immobilisations_incorporelles.html',
-        help='Chemin du fichier HTML de sortie (défaut: note_3a_immobilisations_incorporelles.html)'
+        default='../Tests/test_note_5.html',
+        help='Chemin du fichier HTML de sortie (défaut: ../Tests/test_note_5.html)'
     )
     parser.add_argument(
         '--output-trace',
-        default='note_3a_trace.json',
-        help='Chemin du fichier de trace JSON (défaut: note_3a_trace.json)'
+        default='../Tests/trace_note_5.json',
+        help='Chemin du fichier de trace JSON (défaut: ../Tests/trace_note_5.json)'
     )
     
     args = parser.parse_args()
     
     # Créer le calculateur
-    calculateur = CalculateurNote3A(args.fichier_balance)
+    calculateur = CalculateurNote5(args.fichier_balance)
     
     # Exécuter le calcul complet
     calculateur.executer(

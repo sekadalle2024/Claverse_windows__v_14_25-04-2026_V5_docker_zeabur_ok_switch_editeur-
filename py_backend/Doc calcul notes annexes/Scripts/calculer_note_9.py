@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Script de calcul de la NOTE 3A - IMMOBILISATIONS INCORPORELLES
+Script de calcul de la NOTE 9 - RÉSERVES
 Syscohada Révisé
 
-Ce script calcule la Note 3A à partir des balances N, N-1, N-2 en utilisant
+Ce script calcule la Note 9 à partir des balances N, N-1, N-2 en utilisant
 l'architecture modulaire du système de calcul automatique des notes annexes.
 
 Auteur: Système de calcul automatique des notes annexes SYSCOHADA
@@ -24,67 +24,106 @@ sys.path.insert(0, str(current_dir))
 from calculateur_note_template import CalculateurNote
 
 
-class CalculateurNote3A(CalculateurNote):
+class CalculateurNote9(CalculateurNote):
     """
-    Calculateur pour la Note 3A - Immobilisations Incorporelles.
+    Calculateur pour la Note 9 - Réserves.
     
     Cette classe hérite de CalculateurNote et implémente le calcul spécifique
-    de la Note 3A avec les 4 lignes d'immobilisations incorporelles:
-    - Frais de recherche et de développement
-    - Brevets, licences, logiciels et droits similaires
-    - Fonds commercial et droit au bail
-    - Autres immobilisations incorporelles
+    de la Note 9 avec les mouvements des réserves:
+    - Réserve légale
+    - Réserves statutaires ou contractuelles
+    - Réserves réglementées
+    - Réserves libres
+    - Report à nouveau
+    - Autres réserves
     
     Mapping des comptes SYSCOHADA:
-    - Comptes bruts: 21X (Immobilisations incorporelles)
-    - Comptes amortissements: 281X (Amortissements des immobilisations incorporelles)
-    - Comptes provisions: 291X (Provisions pour dépréciation des immobilisations incorporelles)
+    - Comptes de réserves: 11X
+      * 111: Réserve légale
+      * 112: Réserves statutaires ou contractuelles
+      * 113: Réserves réglementées
+        - 1131: Réserves de plus-values nettes à long terme
+        - 1132: Réserves de réévaluation
+        - 1133: Réserves consécutives à l'octroi de subventions d'investissement
+      * 114: Réserves libres
+      * 115: Écarts de réévaluation
+      * 116: Écarts d'équivalence
+      * 117: Écarts de conversion
+      * 118: Autres réserves
+      * 12: Report à nouveau
+        - 121: Report à nouveau créditeur
+        - 129: Report à nouveau débiteur
+    
+    Note: Les réserves représentent les bénéfices non distribués et affectés
+    à des comptes de réserves. Cette note suit les mouvements des réserves
+    (dotations, prélèvements) sur les 3 exercices (N, N-1, N-2).
+    Les comptes de réserves ne font pas l'objet d'amortissements.
     """
     
     def __init__(self, fichier_balance: str):
         """
-        Initialise le calculateur de la Note 3A.
+        Initialise le calculateur de la Note 9.
         
         Args:
             fichier_balance: Chemin vers le fichier Excel des balances
         """
-        super().__init__(fichier_balance, "3A", "IMMOBILISATIONS INCORPORELLES")
+        super().__init__(fichier_balance, "9", "RÉSERVES")
         
-        # Mapping des comptes pour chaque ligne de la Note 3A
+        # Mapping des comptes pour chaque ligne de la Note 9
         self.mapping_comptes = {
-            'Frais de recherche et de développement': {
-                'brut': ['211'],
-                'amort': ['2811', '2911']
+            'Réserve légale': {
+                'brut': ['111'],
+                'amort': None  # Pas d'amortissements pour les réserves
             },
-            'Brevets, licences, logiciels et droits similaires': {
-                'brut': ['212', '213'],
-                'amort': ['2812', '2813', '2912', '2913']
+            'Réserves statutaires ou contractuelles': {
+                'brut': ['112'],
+                'amort': None
             },
-            'Fonds commercial et droit au bail': {
-                'brut': ['214', '215'],
-                'amort': ['2814', '2815', '2914', '2915']
+            'Réserves réglementées': {
+                'brut': ['1131', '1132', '1133'],
+                'amort': None
             },
-            'Autres immobilisations incorporelles': {
-                'brut': ['216', '217', '218'],
-                'amort': ['2816', '2817', '2818', '2916', '2917', '2918']
+            'Réserves libres': {
+                'brut': ['114'],
+                'amort': None
+            },
+            'Écarts de réévaluation': {
+                'brut': ['115'],
+                'amort': None
+            },
+            'Écarts d\'équivalence': {
+                'brut': ['116'],
+                'amort': None
+            },
+            'Écarts de conversion': {
+                'brut': ['117'],
+                'amort': None
+            },
+            'Autres réserves': {
+                'brut': ['118'],
+                'amort': None
+            },
+            'Report à nouveau': {
+                'brut': ['121', '129'],
+                'amort': None
             }
         }
     
     def generer_note(self) -> pd.DataFrame:
         """
-        Génère la Note 3A complète avec les 4 lignes et le total.
+        Génère la Note 9 complète avec les 9 lignes et le total.
         
         Cette méthode:
-        1. Calcule chaque ligne d'immobilisation incorporelle
+        1. Calcule chaque ligne de réserves
         2. Calcule la ligne de total
         3. Retourne un DataFrame avec toutes les lignes
         
         Returns:
-            DataFrame contenant les 5 lignes (4 lignes + total)
+            DataFrame contenant les 10 lignes (9 lignes + total)
         """
         lignes = []
         
-        # Calculer chaque ligne d'immobilisation incorporelle
+        # Calculer chaque ligne de réserves
         for libelle, comptes in self.mapping_comptes.items():
             print(f"  Calcul: {libelle}...")
             
@@ -116,7 +155,7 @@ class CalculateurNote3A(CalculateurNote):
             Dict représentant la ligne de total
         """
         total = {
-            'libelle': 'TOTAL IMMOBILISATIONS INCORPORELLES',
+            'libelle': 'TOTAL RÉSERVES',
             'brut_ouverture': df['brut_ouverture'].sum(),
             'augmentations': df['augmentations'].sum(),
             'diminutions': df['diminutions'].sum(),
@@ -138,27 +177,29 @@ if __name__ == "__main__":
     
     # Parser les arguments de ligne de commande
     parser = argparse.ArgumentParser(
-        description='Calcul de la Note 3A - Immobilisations Incorporelles'
+        description='Calcul de la Note 9 - Réserves'
     )
     parser.add_argument(
         'fichier_balance',
+        nargs='?',
+        default='../../../P000 -BALANCE DEMO N_N-1_N-2.xls',
         help='Chemin vers le fichier Excel des balances (N, N-1, N-2)'
     )
     parser.add_argument(
         '--output-html',
-        default='note_3a_immobilisations_incorporelles.html',
-        help='Chemin du fichier HTML de sortie (défaut: note_3a_immobilisations_incorporelles.html)'
+        default='../Tests/test_note_9.html',
+        help='Chemin du fichier HTML de sortie (défaut: ../Tests/test_note_9.html)'
     )
     parser.add_argument(
         '--output-trace',
-        default='note_3a_trace.json',
-        help='Chemin du fichier de trace JSON (défaut: note_3a_trace.json)'
+        default='../Tests/trace_note_9.json',
+        help='Chemin du fichier de trace JSON (défaut: ../Tests/trace_note_9.json)'
     )
     
     args = parser.parse_args()
     
     # Créer le calculateur
-    calculateur = CalculateurNote3A(args.fichier_balance)
+    calculateur = CalculateurNote9(args.fichier_balance)
     
     # Exécuter le calcul complet
     calculateur.executer(

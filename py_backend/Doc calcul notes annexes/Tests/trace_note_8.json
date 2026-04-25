@@ -1,0 +1,105 @@
+{
+  "note": "8",
+  "titre": "",
+  "date_generation": "2026-04-25T15:11:07.439132",
+  "fichier_balance": "py_backend/P000 -BALANCE DEMO N_N-1_N-2.xls",
+  "hash_md5_balance": "cf926871c313939e8e562108090d2f57",
+  "lignes": [
+    {
+      "libelle": "Capital social",
+      "montant": -100000000.0,
+      "comptes_sources": [
+        {
+          "compte": "1011",
+          "type": "brut",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        },
+        {
+          "compte": "1012",
+          "type": "brut",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        },
+        {
+          "compte": "1013",
+          "type": "brut",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 100000000.0
+        }
+      ],
+      "timestamp": "2026-04-25T15:11:07.476690"
+    },
+    {
+      "libelle": "Capital par dotation",
+      "montant": 0.0,
+      "comptes_sources": [
+        {
+          "compte": "102",
+          "type": "brut",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        }
+      ],
+      "timestamp": "2026-04-25T15:11:07.488558"
+    },
+    {
+      "libelle": "Capital personnel",
+      "montant": 0.0,
+      "comptes_sources": [
+        {
+          "compte": "103",
+          "type": "brut",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        }
+      ],
+      "timestamp": "2026-04-25T15:11:07.499042"
+    },
+    {
+      "libelle": "Compte de l'exploitant",
+      "montant": 0.0,
+      "comptes_sources": [
+        {
+          "compte": "104",
+          "type": "brut",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        }
+      ],
+      "timestamp": "2026-04-25T15:11:07.507951"
+    },
+    {
+      "libelle": "Primes liées au capital social",
+      "montant": 0.0,
+      "comptes_sources": [
+        {
+          "compte": "1051",
+          "type": "brut",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        },
+        {
+          "compte": "1052",
+          "type": "brut",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        },
+        {
+          "compte": "1053",
+          "type": "brut",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        },
+        {
+          "compte": "1054",
+          "type": "brut",
+          "solde_debit_n": 0.0,
+          "solde_credit_n": 0.0
+        }
+      ],
+      "timestamp": "2026-04-25T15:11:07.543228"
+    }
+  ],
+  "total": {}
+}

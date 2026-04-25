@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Script de calcul de la NOTE 3A - IMMOBILISATIONS INCORPORELLES
+Script de calcul de la NOTE 8 - CAPITAL
 Syscohada Révisé
 
-Ce script calcule la Note 3A à partir des balances N, N-1, N-2 en utilisant
+Ce script calcule la Note 8 à partir des balances N, N-1, N-2 en utilisant
 l'architecture modulaire du système de calcul automatique des notes annexes.
 
 Auteur: Système de calcul automatique des notes annexes SYSCOHADA
@@ -24,67 +24,87 @@ sys.path.insert(0, str(current_dir))
 from calculateur_note_template import CalculateurNote
 
 
-class CalculateurNote3A(CalculateurNote):
+class CalculateurNote8(CalculateurNote):
     """
-    Calculateur pour la Note 3A - Immobilisations Incorporelles.
+    Calculateur pour la Note 8 - Capital.
     
     Cette classe hérite de CalculateurNote et implémente le calcul spécifique
-    de la Note 3A avec les 4 lignes d'immobilisations incorporelles:
-    - Frais de recherche et de développement
-    - Brevets, licences, logiciels et droits similaires
-    - Fonds commercial et droit au bail
-    - Autres immobilisations incorporelles
+    de la Note 8 avec les mouvements du capital social:
+    - Capital social
+    - Capital souscrit non appelé
+    - Capital souscrit appelé non versé
+    - Capital souscrit appelé versé
+    - Actionnaires, capital souscrit non appelé
     
     Mapping des comptes SYSCOHADA:
-    - Comptes bruts: 21X (Immobilisations incorporelles)
-    - Comptes amortissements: 281X (Amortissements des immobilisations incorporelles)
-    - Comptes provisions: 291X (Provisions pour dépréciation des immobilisations incorporelles)
+    - Comptes de capital: 10X (Capital et réserves)
+      * 101: Capital social
+        - 1011: Capital souscrit non appelé
+        - 1012: Capital souscrit appelé non versé
+        - 1013: Capital souscrit appelé versé
+      * 102: Capital par dotation
+      * 103: Capital personnel
+      * 104: Compte de l'exploitant
+      * 105: Primes liées au capital social
+        - 1051: Primes d'émission
+        - 1052: Primes d'apport
+        - 1053: Primes de fusion
+        - 1054: Primes de conversion d'obligations en actions
+    
+    Note: Le capital représente les apports des associés ou actionnaires.
+    Cette note suit les mouvements du capital (augmentations, réductions)
+    sur les 3 exercices (N, N-1, N-2).
+    Les comptes de capital ne font pas l'objet d'amortissements.
     """
     
     def __init__(self, fichier_balance: str):
         """
-        Initialise le calculateur de la Note 3A.
+        Initialise le calculateur de la Note 8.
         
         Args:
             fichier_balance: Chemin vers le fichier Excel des balances
         """
-        super().__init__(fichier_balance, "3A", "IMMOBILISATIONS INCORPORELLES")
+        super().__init__(fichier_balance, "8", "CAPITAL")
         
-        # Mapping des comptes pour chaque ligne de la Note 3A
+        # Mapping des comptes pour chaque ligne de la Note 8
         self.mapping_comptes = {
-            'Frais de recherche et de développement': {
-                'brut': ['211'],
-                'amort': ['2811', '2911']
+            'Capital social': {
+                'brut': ['1011', '1012', '1013'],
+                'amort': None  # Pas d'amortissements pour le capital
             },
-            'Brevets, licences, logiciels et droits similaires': {
-                'brut': ['212', '213'],
-                'amort': ['2812', '2813', '2912', '2913']
+            'Capital par dotation': {
+                'brut': ['102'],
+                'amort': None
             },
-            'Fonds commercial et droit au bail': {
-                'brut': ['214', '215'],
-                'amort': ['2814', '2815', '2914', '2915']
+            'Capital personnel': {
+                'brut': ['103'],
+                'amort': None
             },
-            'Autres immobilisations incorporelles': {
-                'brut': ['216', '217', '218'],
-                'amort': ['2816', '2817', '2818', '2916', '2917', '2918']
+            'Compte de l\'exploitant': {
+                'brut': ['104'],
+                'amort': None
+            },
+            'Primes liées au capital social': {
+                'brut': ['1051', '1052', '1053', '1054'],
+                'amort': None
             }
         }
     
     def generer_note(self) -> pd.DataFrame:
         """
-        Génère la Note 3A complète avec les 4 lignes et le total.
+        Génère la Note 8 complète avec les 5 lignes et le total.
         
         Cette méthode:
-        1. Calcule chaque ligne d'immobilisation incorporelle
+        1. Calcule chaque ligne de capital
         2. Calcule la ligne de total
         3. Retourne un DataFrame avec toutes les lignes
         
         Returns:
-            DataFrame contenant les 5 lignes (4 lignes + total)
+            DataFrame contenant les 6 lignes (5 lignes + total)
         """
         lignes = []
         
-        # Calculer chaque ligne d'immobilisation incorporelle
+        # Calculer chaque ligne de capital
         for libelle, comptes in self.mapping_comptes.items():
             print(f"  Calcul: {libelle}...")
             
@@ -116,7 +136,7 @@ class CalculateurNote3A(CalculateurNote):
             Dict représentant la ligne de total
         """
         total = {
-            'libelle': 'TOTAL IMMOBILISATIONS INCORPORELLES',
+            'libelle': 'TOTAL CAPITAL',
             'brut_ouverture': df['brut_ouverture'].sum(),
             'augmentations': df['augmentations'].sum(),
             'diminutions': df['diminutions'].sum(),
@@ -138,27 +158,29 @@ if __name__ == "__main__":
     
     # Parser les arguments de ligne de commande
     parser = argparse.ArgumentParser(
-        description='Calcul de la Note 3A - Immobilisations Incorporelles'
+        description='Calcul de la Note 8 - Capital'
     )
     parser.add_argument(
         'fichier_balance',
+        nargs='?',
+        default='../../../P000 -BALANCE DEMO N_N-1_N-2.xls',
         help='Chemin vers le fichier Excel des balances (N, N-1, N-2)'
     )
     parser.add_argument(
         '--output-html',
-        default='note_3a_immobilisations_incorporelles.html',
-        help='Chemin du fichier HTML de sortie (défaut: note_3a_immobilisations_incorporelles.html)'
+        default='../Tests/test_note_8.html',
+        help='Chemin du fichier HTML de sortie (défaut: ../Tests/test_note_8.html)'
     )
     parser.add_argument(
         '--output-trace',
-        default='note_3a_trace.json',
-        help='Chemin du fichier de trace JSON (défaut: note_3a_trace.json)'
+        default='../Tests/trace_note_8.json',
+        help='Chemin du fichier de trace JSON (défaut: ../Tests/trace_note_8.json)'
     )
     
     args = parser.parse_args()
     
     # Créer le calculateur
-    calculateur = CalculateurNote3A(args.fichier_balance)
+    calculateur = CalculateurNote8(args.fichier_balance)
     
     # Exécuter le calcul complet
     calculateur.executer(

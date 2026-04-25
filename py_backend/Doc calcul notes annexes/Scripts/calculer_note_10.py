@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Script de calcul de la NOTE 3A - IMMOBILISATIONS INCORPORELLES
+Script de calcul de la NOTE 10 - RÉSULTAT
 Syscohada Révisé
 
-Ce script calcule la Note 3A à partir des balances N, N-1, N-2 en utilisant
+Ce script calcule la Note 10 à partir des balances N, N-1, N-2 en utilisant
 l'architecture modulaire du système de calcul automatique des notes annexes.
 
 Auteur: Système de calcul automatique des notes annexes SYSCOHADA
@@ -24,67 +24,85 @@ sys.path.insert(0, str(current_dir))
 from calculateur_note_template import CalculateurNote
 
 
-class CalculateurNote3A(CalculateurNote):
+class CalculateurNote10(CalculateurNote):
     """
-    Calculateur pour la Note 3A - Immobilisations Incorporelles.
+    Calculateur pour la Note 10 - Résultat.
     
     Cette classe hérite de CalculateurNote et implémente le calcul spécifique
-    de la Note 3A avec les 4 lignes d'immobilisations incorporelles:
-    - Frais de recherche et de développement
-    - Brevets, licences, logiciels et droits similaires
-    - Fonds commercial et droit au bail
-    - Autres immobilisations incorporelles
+    de la Note 10 avec les mouvements du résultat:
+    - Résultat en instance d'affectation
+    - Résultat net de l'exercice
     
     Mapping des comptes SYSCOHADA:
-    - Comptes bruts: 21X (Immobilisations incorporelles)
-    - Comptes amortissements: 281X (Amortissements des immobilisations incorporelles)
-    - Comptes provisions: 291X (Provisions pour dépréciation des immobilisations incorporelles)
+    - Comptes de résultat: 12X, 13X
+      * 12: Report à nouveau et résultat
+        - 121: Report à nouveau créditeur (bénéficiaire)
+        - 129: Report à nouveau débiteur (déficitaire)
+      * 13: Résultat net de l'exercice
+        - 130: Résultat en instance d'affectation
+          - 1301: Résultat en instance d'affectation: bénéfice
+          - 1309: Résultat en instance d'affectation: perte
+        - 131: Résultat net: bénéfice
+        - 139: Résultat net: perte
+    
+    Note: Le résultat représente le bénéfice ou la perte de l'exercice.
+    Cette note suit les mouvements du résultat (affectation, distribution)
+    sur les 3 exercices (N, N-1, N-2).
+    Les comptes de résultat ne font pas l'objet d'amortissements.
     """
     
     def __init__(self, fichier_balance: str):
         """
-        Initialise le calculateur de la Note 3A.
+        Initialise le calculateur de la Note 10.
         
         Args:
             fichier_balance: Chemin vers le fichier Excel des balances
         """
-        super().__init__(fichier_balance, "3A", "IMMOBILISATIONS INCORPORELLES")
+        super().__init__(fichier_balance, "10", "RÉSULTAT")
         
-        # Mapping des comptes pour chaque ligne de la Note 3A
+        # Mapping des comptes pour chaque ligne de la Note 10
         self.mapping_comptes = {
-            'Frais de recherche et de développement': {
-                'brut': ['211'],
-                'amort': ['2811', '2911']
+            'Report à nouveau créditeur': {
+                'brut': ['121'],
+                'amort': None  # Pas d'amortissements pour le résultat
             },
-            'Brevets, licences, logiciels et droits similaires': {
-                'brut': ['212', '213'],
-                'amort': ['2812', '2813', '2912', '2913']
+            'Report à nouveau débiteur': {
+                'brut': ['129'],
+                'amort': None
             },
-            'Fonds commercial et droit au bail': {
-                'brut': ['214', '215'],
-                'amort': ['2814', '2815', '2914', '2915']
+            'Résultat en instance d\'affectation - Bénéfice': {
+                'brut': ['1301'],
+                'amort': None
             },
-            'Autres immobilisations incorporelles': {
-                'brut': ['216', '217', '218'],
-                'amort': ['2816', '2817', '2818', '2916', '2917', '2918']
+            'Résultat en instance d\'affectation - Perte': {
+                'brut': ['1309'],
+                'amort': None
+            },
+            'Résultat net de l\'exercice - Bénéfice': {
+                'brut': ['131'],
+                'amort': None
+            },
+            'Résultat net de l\'exercice - Perte': {
+                'brut': ['139'],
+                'amort': None
             }
         }
     
     def generer_note(self) -> pd.DataFrame:
         """
-        Génère la Note 3A complète avec les 4 lignes et le total.
+        Génère la Note 10 complète avec les 6 lignes et le total.
         
         Cette méthode:
-        1. Calcule chaque ligne d'immobilisation incorporelle
+        1. Calcule chaque ligne de résultat
         2. Calcule la ligne de total
         3. Retourne un DataFrame avec toutes les lignes
         
         Returns:
-            DataFrame contenant les 5 lignes (4 lignes + total)
+            DataFrame contenant les 7 lignes (6 lignes + total)
         """
         lignes = []
         
-        # Calculer chaque ligne d'immobilisation incorporelle
+        # Calculer chaque ligne de résultat
         for libelle, comptes in self.mapping_comptes.items():
             print(f"  Calcul: {libelle}...")
             
@@ -116,7 +134,7 @@ class CalculateurNote3A(CalculateurNote):
             Dict représentant la ligne de total
         """
         total = {
-            'libelle': 'TOTAL IMMOBILISATIONS INCORPORELLES',
+            'libelle': 'TOTAL RÉSULTAT',
             'brut_ouverture': df['brut_ouverture'].sum(),
             'augmentations': df['augmentations'].sum(),
             'diminutions': df['diminutions'].sum(),
@@ -138,27 +156,29 @@ if __name__ == "__main__":
     
     # Parser les arguments de ligne de commande
     parser = argparse.ArgumentParser(
-        description='Calcul de la Note 3A - Immobilisations Incorporelles'
+        description='Calcul de la Note 10 - Résultat'
     )
     parser.add_argument(
         'fichier_balance',
+        nargs='?',
+        default='../../../P000 -BALANCE DEMO N_N-1_N-2.xls',
         help='Chemin vers le fichier Excel des balances (N, N-1, N-2)'
     )
     parser.add_argument(
         '--output-html',
-        default='note_3a_immobilisations_incorporelles.html',
-        help='Chemin du fichier HTML de sortie (défaut: note_3a_immobilisations_incorporelles.html)'
+        default='../Tests/test_note_10.html',
+        help='Chemin du fichier HTML de sortie (défaut: ../Tests/test_note_10.html)'
     )
     parser.add_argument(
         '--output-trace',
-        default='note_3a_trace.json',
-        help='Chemin du fichier de trace JSON (défaut: note_3a_trace.json)'
+        default='../Tests/trace_note_10.json',
+        help='Chemin du fichier de trace JSON (défaut: ../Tests/trace_note_10.json)'
     )
     
     args = parser.parse_args()
     
     # Créer le calculateur
-    calculateur = CalculateurNote3A(args.fichier_balance)
+    calculateur = CalculateurNote10(args.fichier_balance)
     
     # Exécuter le calcul complet
     calculateur.executer(

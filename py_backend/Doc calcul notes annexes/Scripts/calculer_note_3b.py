@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Script de calcul de la NOTE 3A - IMMOBILISATIONS INCORPORELLES
+Script de calcul de la NOTE 3B - IMMOBILISATIONS CORPORELLES
 Syscohada Révisé
 
-Ce script calcule la Note 3A à partir des balances N, N-1, N-2 en utilisant
+Ce script calcule la Note 3B à partir des balances N, N-1, N-2 en utilisant
 l'architecture modulaire du système de calcul automatique des notes annexes.
 
 Auteur: Système de calcul automatique des notes annexes SYSCOHADA
@@ -24,67 +24,93 @@ sys.path.insert(0, str(current_dir))
 from calculateur_note_template import CalculateurNote
 
 
-class CalculateurNote3A(CalculateurNote):
+class CalculateurNote3B(CalculateurNote):
     """
-    Calculateur pour la Note 3A - Immobilisations Incorporelles.
+    Calculateur pour la Note 3B - Immobilisations Corporelles.
     
     Cette classe hérite de CalculateurNote et implémente le calcul spécifique
-    de la Note 3A avec les 4 lignes d'immobilisations incorporelles:
-    - Frais de recherche et de développement
-    - Brevets, licences, logiciels et droits similaires
-    - Fonds commercial et droit au bail
-    - Autres immobilisations incorporelles
+    de la Note 3B avec les 9 lignes d'immobilisations corporelles:
+    - Terrains
+    - Bâtiments
+    - Installations et agencements
+    - Matériel
+    - Matériel de transport
+    - Avances et acomptes versés sur immobilisations
+    - Immobilisations corporelles en cours
+    - Autres immobilisations corporelles
+    - Immobilisations corporelles hors exploitation
     
     Mapping des comptes SYSCOHADA:
-    - Comptes bruts: 21X (Immobilisations incorporelles)
-    - Comptes amortissements: 281X (Amortissements des immobilisations incorporelles)
-    - Comptes provisions: 291X (Provisions pour dépréciation des immobilisations incorporelles)
+    - Comptes bruts: 22X (Immobilisations corporelles)
+    - Comptes amortissements: 282X (Amortissements des immobilisations corporelles)
+    - Comptes provisions: 292X (Provisions pour dépréciation des immobilisations corporelles)
     """
     
     def __init__(self, fichier_balance: str):
         """
-        Initialise le calculateur de la Note 3A.
+        Initialise le calculateur de la Note 3B.
         
         Args:
             fichier_balance: Chemin vers le fichier Excel des balances
         """
-        super().__init__(fichier_balance, "3A", "IMMOBILISATIONS INCORPORELLES")
+        super().__init__(fichier_balance, "3B", "IMMOBILISATIONS CORPORELLES")
         
-        # Mapping des comptes pour chaque ligne de la Note 3A
+        # Mapping des comptes pour chaque ligne de la Note 3B
         self.mapping_comptes = {
-            'Frais de recherche et de développement': {
-                'brut': ['211'],
-                'amort': ['2811', '2911']
+            'Terrains': {
+                'brut': ['221'],
+                'amort': ['2821', '2921']
             },
-            'Brevets, licences, logiciels et droits similaires': {
-                'brut': ['212', '213'],
-                'amort': ['2812', '2813', '2912', '2913']
+            'Bâtiments': {
+                'brut': ['222', '223'],
+                'amort': ['2822', '2823', '2922', '2923']
             },
-            'Fonds commercial et droit au bail': {
-                'brut': ['214', '215'],
-                'amort': ['2814', '2815', '2914', '2915']
+            'Installations et agencements': {
+                'brut': ['224'],
+                'amort': ['2824', '2924']
             },
-            'Autres immobilisations incorporelles': {
-                'brut': ['216', '217', '218'],
-                'amort': ['2816', '2817', '2818', '2916', '2917', '2918']
+            'Matériel': {
+                'brut': ['225', '226'],
+                'amort': ['2825', '2826', '2925', '2926']
+            },
+            'Matériel de transport': {
+                'brut': ['227'],
+                'amort': ['2827', '2927']
+            },
+            'Avances et acomptes versés sur immobilisations': {
+                'brut': ['228'],
+                'amort': ['2828', '2928']
+            },
+            'Immobilisations corporelles en cours': {
+                'brut': ['229'],
+                'amort': ['2829', '2929']
+            },
+            'Autres immobilisations corporelles': {
+                'brut': ['2281', '2282', '2283', '2284', '2285', '2286', '2287'],
+                'amort': ['28281', '28282', '28283', '28284', '28285', '28286', '28287',
+                         '29281', '29282', '29283', '29284', '29285', '29286', '29287']
+            },
+            'Immobilisations corporelles hors exploitation': {
+                'brut': ['2288'],
+                'amort': ['28288', '29288']
             }
         }
     
     def generer_note(self) -> pd.DataFrame:
         """
-        Génère la Note 3A complète avec les 4 lignes et le total.
+        Génère la Note 3B complète avec les 9 lignes et le total.
         
         Cette méthode:
-        1. Calcule chaque ligne d'immobilisation incorporelle
+        1. Calcule chaque ligne d'immobilisation corporelle
         2. Calcule la ligne de total
         3. Retourne un DataFrame avec toutes les lignes
         
         Returns:
-            DataFrame contenant les 5 lignes (4 lignes + total)
+            DataFrame contenant les 10 lignes (9 lignes + total)
         """
         lignes = []
         
-        # Calculer chaque ligne d'immobilisation incorporelle
+        # Calculer chaque ligne d'immobilisation corporelle
         for libelle, comptes in self.mapping_comptes.items():
             print(f"  Calcul: {libelle}...")
             
@@ -116,7 +142,7 @@ class CalculateurNote3A(CalculateurNote):
             Dict représentant la ligne de total
         """
         total = {
-            'libelle': 'TOTAL IMMOBILISATIONS INCORPORELLES',
+            'libelle': 'TOTAL IMMOBILISATIONS CORPORELLES',
             'brut_ouverture': df['brut_ouverture'].sum(),
             'augmentations': df['augmentations'].sum(),
             'diminutions': df['diminutions'].sum(),
@@ -138,7 +164,7 @@ if __name__ == "__main__":
     
     # Parser les arguments de ligne de commande
     parser = argparse.ArgumentParser(
-        description='Calcul de la Note 3A - Immobilisations Incorporelles'
+        description='Calcul de la Note 3B - Immobilisations Corporelles'
     )
     parser.add_argument(
         'fichier_balance',
@@ -146,19 +172,19 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         '--output-html',
-        default='note_3a_immobilisations_incorporelles.html',
-        help='Chemin du fichier HTML de sortie (défaut: note_3a_immobilisations_incorporelles.html)'
+        default='note_3b_immobilisations_corporelles.html',
+        help='Chemin du fichier HTML de sortie (défaut: note_3b_immobilisations_corporelles.html)'
     )
     parser.add_argument(
         '--output-trace',
-        default='note_3a_trace.json',
-        help='Chemin du fichier de trace JSON (défaut: note_3a_trace.json)'
+        default='note_3b_trace.json',
+        help='Chemin du fichier de trace JSON (défaut: note_3b_trace.json)'
     )
     
     args = parser.parse_args()
     
     # Créer le calculateur
-    calculateur = CalculateurNote3A(args.fichier_balance)
+    calculateur = CalculateurNote3B(args.fichier_balance)
     
     # Exécuter le calcul complet
     calculateur.executer(
