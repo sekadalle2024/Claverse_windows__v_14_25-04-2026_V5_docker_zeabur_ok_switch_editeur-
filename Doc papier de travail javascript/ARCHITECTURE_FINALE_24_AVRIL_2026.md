@@ -1,9 +1,32 @@
 # Architecture Finale - Schéma de Calcul Papier de Travail
 **Date:** 24 avril 2026
+**Mise à jour:** 25 avril 2026 - Correction positionnement Cross référence
 
 ## 🎯 Vue d'ensemble
 
 Le système de schéma de calcul utilise **une architecture hybride** avec du code dans `menu.js` ET des fichiers dédiés.
+
+## 📍 Positionnement des tables
+
+**IMPORTANT - Ordre des tables:**
+1. **Schéma de calcul** → AU-DESSUS (ABOVE) de la table principale
+2. **Table principale** (Modelised_table) → Au milieu
+3. **Cross référence horizontale** → EN DESSOUS (BELOW) de la table principale
+
+```
+┌─────────────────────────────────────┐
+│  Schéma de calcul (AU-DESSUS)       │
+│  | (A) | (B) | (C) = (A) - (B) |    │
+└─────────────────────────────────────┘
+┌─────────────────────────────────────┐
+│  Table principale (Modelised_table) │
+│  | Compte | Libellé | Solde | ...  │
+└─────────────────────────────────────┘
+┌─────────────────────────────────────┐
+│  Cross référence (EN DESSOUS)       │
+│  | [AA10] | [AA20] | [AA30] |       │
+└─────────────────────────────────────┘
+```
 
 ---
 
@@ -169,6 +192,20 @@ schemaManager.ajouterSchemaCalcul(divElement);
 2. ✅ **Suppression du caption** : Plus de libellé "Schéma de calcul: ..."
 3. ✅ **Logs améliorés** : Debug détaillé de la détection
 4. ✅ **Architecture documentée** : Ce fichier !
+
+## ✅ Corrections (25 avril 2026)
+
+1. ✅ **Positionnement Cross référence** : Correction du module standalone
+   - **Avant** : Cross référence AU-DESSUS de la table principale (incorrect)
+   - **Après** : Cross référence EN DESSOUS de la table principale (correct)
+   - **Fichier corrigé** : `public/papier-travail-cross-ref-horizontale.js`
+   - **Méthode** : `createCrossRefHorizontale()` - ligne 374
+   - **Code** : Utilisation de `insertBefore(nextSibling)` ou `appendChild()`
+
+2. ✅ **Alignement des colonnes** : Implémenté dans menu.js
+   - Les tables Schéma de calcul et Cross référence ont le MÊME nombre de colonnes que la table principale
+   - Les variables se terminent sur l'axe de la colonne "Ecart"
+   - Colonnes vides ajoutées avant et après les variables pour l'alignement
 
 ---
 

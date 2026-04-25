@@ -186,30 +186,30 @@ This implementation plan creates a modular Python system to automate the calcula
     - Implement sauvegarder_html() method
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7_
 
-  - [ ] 13.2 Create calculer_note_3a.py for Immobilisations Incorporelles
+  - [x] 13.2 Create calculer_note_3a.py for Immobilisations Incorporelles
     - Define mapping_comptes for accounts 21X (brut) and 281X/291X (amortissements)
     - Implement specific calculation logic for 4 lines (Frais R&D, Brevets, Logiciels, Autres)
     - Calculate 11 columns per line (brut ouverture/clôture, augmentations, diminutions, amort, dotations, reprises, VNC)
     - Generate HTML output with SYSCOHADA format
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 6.1, 6.2_
 
-  - [ ]* 13.3 Write property test for script structure conformity
+  - [x] 13.3 Write property test for script structure conformity
     - **Property 10: Script Structure Conformity**
     - **Validates: Requirements 5.2, 5.3, 5.4**
 
-  - [ ]* 13.4 Write integration test for Note 3A complete calculation
+  - [x] 13.4 Write integration test for Note 3A complete calculation
     - Test complete workflow from balance loading to HTML generation
     - Verify all 11 columns calculated correctly
     - Verify coherence of accounting equations
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7_
 
 - [ ] 14. Create calculators for Notes 3B-3E (Fixed Assets)
-  - [ ] 14.1 Create calculer_note_3b.py for Immobilisations Corporelles
+  - [x] 14.1 Create calculer_note_3b.py for Immobilisations Corporelles
     - Define mapping for accounts 22X (brut) and 282X/292X (amortissements)
     - Implement calculation for 9 lines (Terrains, Bâtiments, Installations, Matériel, etc.)
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-  - [ ] 14.2 Create calculer_note_3c.py for Immobilisations Financières
+  - [x] 14.2 Create calculer_note_3c.py for Immobilisations Financières
     - Define mapping for accounts 26X and 27X
     - Implement calculation for financial investments
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
@@ -224,38 +224,38 @@ This implementation plan creates a modular Python system to automate the calcula
     - Implement calculation for foreign exchange differences
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-  - [ ]* 14.5 Write integration tests for Notes 3B-3E
+  - [x] 14.5 Write integration tests for Notes 3B-3E
     - Test each note's complete calculation workflow
     - Verify inter-note consistency for total immobilizations
     - _Requirements: 10.1, 10.2_
 
 - [ ] 15. Create calculators for Notes 4-10 (Current Assets and Liabilities)
-  - [ ] 15.1 Create calculer_note_4.py for Stocks
+  - [x] 15.1 Create calculer_note_4.py for Stocks
     - Define mapping for accounts 3X
     - Implement calculation for inventory movements
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-  - [ ] 15.2 Create calculer_note_5.py for Créances Clients
+  - [x] 15.2 Create calculer_note_5.py for Créances Clients
     - Define mapping for accounts 41X
     - Implement calculation for customer receivables
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-  - [ ] 15.3 Create calculer_note_6.py for Autres Créances
+  - [x] 15.3 Create calculer_note_6.py for Autres Créances
     - Define mapping for accounts 42X, 43X, 44X, 45X
     - Implement calculation for other receivables
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-  - [ ] 15.4 Create calculer_note_7.py for Trésorerie Actif
+  - [x] 15.4 Create calculer_note_7.py for Trésorerie Actif
     - Define mapping for accounts 5X
     - Implement calculation for cash and cash equivalents
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-  - [ ] 15.5 Create calculer_note_8.py for Capital
+  - [x] 15.5 Create calculer_note_8.py for Capital
     - Define mapping for accounts 10X
     - Implement calculation for share capital movements
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
 
-  - [ ] 15.6 Create calculer_note_9.py for Réserves
+  - [x] 15.6 Create calculer_note_9.py for Réserves
     - Define mapping for accounts 11X
     - Implement calculation for reserves
     - _Requirements: 5.1, 5.2, 5.3, 5.4_
